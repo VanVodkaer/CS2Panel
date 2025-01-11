@@ -10,10 +10,24 @@ import (
 // 全局变量 GlobalConfig
 var GlobalConfig *Config
 
+// 初始化全局变量
+func init() {
+	// 从配置文件加载日志配置
+	cfg, err := LoadConfig()
+	if err != nil {
+		log.Fatalf("加载配置文件失败: %v", err)
+	} else {
+		GlobalConfig = cfg
+		log.Printf("配置文件加载成功: %+v\n", cfg)
+	}
+
+}
+
 // Config 结构体存储应用程序的配置
 type Config struct {
 	Env struct {
-		Mode string `mapstructure:"mode"`
+		Mode     string `mapstructure:"mode"`
+		LogLevel string `mapstructure:"log_level"`
 	} `mapstructure:"env"`
 
 	Server struct {
@@ -21,8 +35,11 @@ type Config struct {
 	} `mapstructure:"server"`
 
 	Docker struct {
-		ImageName string `mapstructure:"image_name"`
-		Tag       string `mapstructure:"tag"`
+		ImageName  string `mapstructure:"image_name"`
+		Tag        string `mapstructure:"tag"`
+		Prefix     string `mapstructure:"prefix"`
+		MaxRetries int    `mapstructure:"max_retries"`
+		RetryDelay int    `mapstructure:"retry_delay"`
 	} `mapstructure:"docker"`
 
 	Util struct {
@@ -60,16 +77,4 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &config, nil
-}
-
-func init() {
-	// 从配置文件加载日志配置
-	cfg, err := LoadConfig()
-	if err != nil {
-		log.Fatalf("加载配置文件失败: %v", err)
-	} else {
-		GlobalConfig = cfg
-		log.Printf("配置文件加载成功: %+v\n", cfg)
-	}
-
 }

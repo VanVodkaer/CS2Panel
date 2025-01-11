@@ -1,12 +1,15 @@
 env:
   mode: "debug" # debug, release
-
+  log_level: "debug" # 日志级别 debug, info, warn, error, fatal, panic, trace
 server:
   port: 8080
 
 docker:
-  image_name: "joedwards32/cs2"
-  tag: "latest"
+  image_name: "joedwards32/cs2" # 镜像名称
+  tag: "latest" # 镜像标签
+  prefix: "cs2panel" # 镜像前缀
+  max_retries: 3 # 重连重试次数
+  retry_delay: 1 # 重连重试间隔
 
 util:
   log_dir: "./logs" # 日志路径

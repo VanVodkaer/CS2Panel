@@ -24,6 +24,7 @@ func init() {
 	logMaxBackups := config.GlobalConfig.Util.LogMaxBackups
 	logMaxAge := config.GlobalConfig.Util.LogMaxAge
 	logCompress := config.GlobalConfig.Util.LogCompress
+	logLevel := config.GlobalConfig.Env.LogLevel
 	// 日志文件路径
 	logFilePath := filepath.Join(logDir, logFileName)
 
@@ -51,7 +52,28 @@ func init() {
 	})
 
 	// 设置日志级别
-	Logger.SetLevel(logrus.InfoLevel)
+	var level logrus.Level
+	switch logLevel {
+	case "panic":
+		level = logrus.PanicLevel
+	case "fatal":
+		level = logrus.FatalLevel
+	case "error":
+		level = logrus.ErrorLevel
+	case "warn":
+		level = logrus.WarnLevel
+	case "info":
+		level = logrus.InfoLevel
+	case "debug":
+		level = logrus.DebugLevel
+	case "trace":
+		level = logrus.TraceLevel
+	default:
+		logrus.Warnf("错误的日志级别: %s, 设置默认级别Info", level)
+		level = logrus.InfoLevel
+	}
+	logrus.SetLevel(level)
+
 }
 
 // Info 记录信息级别日志
