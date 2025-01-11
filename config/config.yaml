@@ -1,0 +1,17 @@
+env:
+  mode: "debug" # debug, release
+
+server:
+  port: 8080
+
+docker:
+  image_name: "joedwards32/cs2"
+  tag: "latest"
+
+util:
+  log_dir: "./logs" # 日志路径
+  log_filename: "app.log" # 日志文件名
+  log_max_size: 10 # 日志文件大小，单位MB
+  log_max_backups: 5 # 日志文件最大备份数
+  log_max_age: 30 # 日志文件最大保存天数
+  log_compress: true # 是否压缩日志文件
