@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/VanVodkaer/CS2Panel/docker"
 	"github.com/VanVodkaer/CS2Panel/server"
 	"github.com/VanVodkaer/CS2Panel/util"
 )
@@ -17,4 +18,9 @@ func main() {
 	// 启动 Web 服务器
 	app.ServerStart()
 
+	// 关闭 Docker 客户端
+	defer docker.Cli.Close()
+
+	util.Warn("程序已退出")
+	return
 }

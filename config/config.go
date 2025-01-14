@@ -37,6 +37,7 @@ type Config struct {
 	Docker struct {
 		ImageName  string `mapstructure:"image_name"`
 		Tag        string `mapstructure:"tag"`
+		VolumeName string `mapstructure:"volume_name"`
 		Prefix     string `mapstructure:"prefix"`
 		MaxRetries int    `mapstructure:"max_retries"`
 		RetryDelay int    `mapstructure:"retry_delay"`

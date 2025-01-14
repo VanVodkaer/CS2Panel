@@ -7,6 +7,7 @@ server:
 docker:
   image_name: "joedwards32/cs2" # 镜像名称
   tag: "latest" # 镜像标签
+  volume_name: "cs2panel" # 卷名称
   prefix: "cs2panel" # 镜像前缀
   max_retries: 3 # 重连重试次数
   retry_delay: 1 # 重连重试间隔
