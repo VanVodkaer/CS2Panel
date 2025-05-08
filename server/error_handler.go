@@ -15,5 +15,4 @@ func handleErrorResponse(c *gin.Context, message string, err error) {
 	})
 
 	util.Error(message, err) // 日志记录
-	return
 }

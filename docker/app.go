@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/VanVodkaer/CS2Panel/config"
@@ -28,7 +29,7 @@ func init() {
 	// 测试 Docker Daemon 连接（包含重试机制）
 	if err := TestDockerConnection(); err != nil {
 		util.Error("Docker Daemon 连接失败", err)
-		return
+		os.Exit(1)
 	}
 }
 
@@ -54,4 +55,5 @@ func TestDockerConnection() error {
 
 	// 如果所有重试都失败，返回最终的错误
 	return fmt.Errorf("测试 Docker Daemon 连接失败, 请检查 Docker 服务: %v", err)
+
 }

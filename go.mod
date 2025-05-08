@@ -4,6 +4,8 @@ go 1.23.4
 
 require github.com/gin-gonic/gin v1.10.0
 
+require github.com/forewing/csgo-rcon v1.3.0 // indirect
+
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect

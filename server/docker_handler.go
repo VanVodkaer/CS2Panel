@@ -31,7 +31,6 @@ func pingHandler(c *gin.Context) {
 	}
 
 	util.Info(fmt.Sprintf("Docker 服务正在运行, Ping 信息: %+v", ping))
-	return
 }
 
 // imagePullHandler 处理拉取 Docker 镜像的请求
@@ -48,7 +47,6 @@ func imagePullHandler(c *gin.Context) {
 	})
 
 	util.Info("拉取 Docker 镜像成功")
-	return
 }
 
 // containerListHandler 处理获取 Docker 容器列表的请求
@@ -74,14 +72,14 @@ func containerListHandler(c *gin.Context) {
 	}
 
 	util.Info("获取 Docker 容器列表成功")
-	return
 }
 
 // DockerCreateRequest 定义创建 Docker 容器的请求参数
 type ContainerCreateRequest struct {
-	Name      string `json:"name" binding:"required"` // 容器名称
-	GamePort  string `json:"game_port"`               // 用于游戏服务器的端口
-	WatchPort string `json:"watch_port"`              // 用于观战服务器状态的端口
+	Name       string `json:"name" binding:"required"` // 容器名称
+	ServerName string `json:"server_name"`             // 游戏服务器名称
+	GamePort   string `json:"game_port"`               // 用于游戏服务器和Rcon的端口
+	WatchPort  string `json:"watch_port"`              // 用于观战服务器状态的端口
 }
 
 // containerCreateHandler 处理创建 Docker 容器的请求
@@ -105,13 +103,13 @@ func containerCreateHandler(c *gin.Context) {
 	containerConfig := &container.Config{
 		Image: config.GlobalConfig.Docker.ImageName,
 		ExposedPorts: nat.PortSet{
-			"27015/tcp": {},
-			"27020/tcp": {},
-			"27015/udp": {},
-			"27020/udp": {},
+			"27015/tcp": {}, // Rcon端口
+			"27015/udp": {}, // 游戏服务器端口
+			"27020/udp": {}, // 观战服务器端口
 		},
 		Env: []string{
-			fmt.Sprintf("SRCDS_TOKEN=%s", os.Getenv("SRCDS_TOKEN")),
+			fmt.Sprintf("SRCDS_TOKEN=%s", config.GlobalConfig.Game.SRCDS_TOKEN),
+			fmt.Sprintf("RCON_PASSWORD=%s", config.GlobalConfig.Game.RCON_PASSWORD),
 		},
 	}
 
@@ -120,23 +118,23 @@ func containerCreateHandler(c *gin.Context) {
 			"27015/tcp": []nat.PortBinding{{
 				HostPort: util.DefaultIfEmpty(req.GamePort, "27015"),
 			}},
-			"27020/tcp": []nat.PortBinding{{
-				HostPort: util.DefaultIfEmpty(req.WatchPort, "27020"),
-			}},
 			"27015/udp": []nat.PortBinding{{
 				HostPort: util.DefaultIfEmpty(req.GamePort, "27015"),
-			}},
-			"27020/udp": []nat.PortBinding{{
-				HostPort: util.DefaultIfEmpty(req.WatchPort, "27020"),
 			}},
 		},
 		Binds: []string{
 			bindPath,
 		},
 	}
+	// 如果 WatchPort 不为空，则添加 27020/udp
+	if req.WatchPort != "" {
+		hostConfig.PortBindings["27020/udp"] = []nat.PortBinding{{
+			HostPort: req.WatchPort,
+		}}
+	}
 
 	// 创建容器
-	createResp, err := docker.Cli.ContainerCreate(context.Background(), containerConfig, hostConfig, nil, nil, config.GlobalConfig.Docker.Prefix+"-"+req.Name)
+	createResp, err := docker.Cli.ContainerCreate(context.Background(), containerConfig, hostConfig, nil, nil, util.FullName(req.Name))
 	if err != nil {
 		handleErrorResponse(c, "创建容器失败", err)
 		return
@@ -149,12 +147,12 @@ func containerCreateHandler(c *gin.Context) {
 	}
 
 	util.Info("容器创建成功 容器 ID: " + createResp.ID)
-	return
 }
 
 // ContainerStartRequest 定义启动 Docker 容器的请求参数
 type ContainerStartRequest struct {
-	ID string `json:"id" binding:"required"`
+	Name string   `json:"name" binding:"required"`
+	Cmds []string `json:"cmds"` // 可选的命令参数
 }
 
 // containerStartHandler 处理启动 Docker 容器的请求
@@ -166,23 +164,44 @@ func containerStartHandler(c *gin.Context) {
 		return
 	}
 	// 启动容器
-	if err := docker.Cli.ContainerStart(context.Background(), config.GlobalConfig.Docker.Prefix+"-"+req.ID, container.StartOptions{}); err != nil {
+	err := docker.Cli.ContainerStart(context.Background(), util.FullName(req.Name), container.StartOptions{})
+	if err != nil {
 		handleErrorResponse(c, "启动容器失败", err)
 		return
-	} else {
-		// 返回容器启动成功的消息
+	}
+	// 如果提供了命令参数，则执行命令
+	if req.Cmds != nil {
+		var responses []string
+
+		for _, cmd := range req.Cmds {
+			response, err := ExecRconCommand(util.FullName(req.Name), cmd)
+			if err != nil {
+				handleErrorResponse(c, "执行命令失败", err)
+				return
+			} else {
+				responses = append(responses, response)
+				util.Info("执行命令成功 命令: " + cmd + " 响应: " + response)
+			}
+		}
+		// 返回执行命令的响应
 		c.JSON(200, gin.H{
-			"message": "容器启动成功",
+			"message":   "执行命令成功",
+			"responses": responses,
 		})
+
 	}
 
-	util.Info("容器启动成功 容器 ID: " + req.ID)
-	return
+	// 返回容器启动成功的消息
+	c.JSON(200, gin.H{
+		"message": "容器启动成功",
+	})
+
+	util.Info("容器启动成功 容器 ID: " + req.Name)
 }
 
 // ContainerStopRequest 定义停止 Docker 容器的请求参数
 type ContainerStopRequest struct {
-	ID string `json:"id" binding:"required"`
+	Name string `json:"name" binding:"required"`
 }
 
 // containerStopHandler 处理停止 Docker 容器的请求
@@ -194,7 +213,7 @@ func containerStopHandler(c *gin.Context) {
 		return
 	}
 	// 停止容器
-	if err := docker.Cli.ContainerStop(context.Background(), req.ID, container.StopOptions{}); err != nil {
+	if err := docker.Cli.ContainerStop(context.Background(), util.FullName(req.Name), container.StopOptions{}); err != nil {
 		handleErrorResponse(c, "停止容器失败", err)
 		return
 	} else {
@@ -204,13 +223,12 @@ func containerStopHandler(c *gin.Context) {
 		})
 	}
 
-	util.Info("容器停止成功 容器 ID: " + req.ID)
-	return
+	util.Info("容器停止成功 容器 ID: " + req.Name)
 }
 
 // ContainerRestartRequest 定义重启 Docker 容器的请求参数
 type ContainerRestartRequest struct {
-	ID string `json:"id" binding:"required"`
+	Name string `json:"name" binding:"required"`
 }
 
 // containerRestartHandler 处理重启 Docker 容器的请求
@@ -222,7 +240,7 @@ func containerRestartHandler(c *gin.Context) {
 		return
 	}
 	// 重启容器
-	if err := docker.Cli.ContainerRestart(context.Background(), req.ID, container.StopOptions{}); err != nil {
+	if err := docker.Cli.ContainerRestart(context.Background(), util.FullName(req.Name), container.StopOptions{}); err != nil {
 		handleErrorResponse(c, "重启容器失败", err)
 		return
 	} else {
@@ -232,13 +250,12 @@ func containerRestartHandler(c *gin.Context) {
 		})
 	}
 
-	util.Info("容器重启成功 容器 ID: " + req.ID)
-	return
+	util.Info("容器重启成功 容器 ID: " + req.Name)
 }
 
 // ContainerRemoveRequest 定义删除 Docker 容器的请求参数
 type ContainerRemoveRequest struct {
-	ID string `json:"id" binding:"required"`
+	Name string `json:"name" binding:"required"`
 }
 
 // containerRemoveHandler 处理删除 Docker 容器的请求
@@ -250,7 +267,7 @@ func containerRemoveHandler(c *gin.Context) {
 		return
 	}
 	// 删除容器
-	if err := docker.Cli.ContainerRemove(context.Background(), req.ID, container.RemoveOptions{}); err != nil {
+	if err := docker.Cli.ContainerRemove(context.Background(), util.FullName(req.Name), container.RemoveOptions{}); err != nil {
 		handleErrorResponse(c, "删除容器失败", err)
 		return
 	} else {
@@ -260,14 +277,13 @@ func containerRemoveHandler(c *gin.Context) {
 		})
 	}
 
-	util.Info("容器删除成功 容器 ID: " + req.ID)
-	return
+	util.Info("容器删除成功 容器 ID: " + req.Name)
 }
 
 // ContainerExecRequest 定义执行 Docker 容器命令的请求参数
 type ContainerExecRequest struct {
-	ID  string   `json:"id" binding:"required"`
-	Cmd []string `json:"cmd" binding:"required"`
+	Name string   `json:"name" binding:"required"`
+	Cmds []string `json:"cmds" binding:"required"`
 }
 
 // containerExecHandler 处理执行 Docker 容器命令的请求
@@ -278,24 +294,22 @@ func containerExecHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	// 创建执行命令的配置
-	execConfig := container.ExecOptions{
-		Cmd: req.Cmd,
-	}
-	// 执行命令
-	execID, err := docker.Cli.ContainerExecCreate(context.Background(), req.ID, execConfig)
-	if err != nil {
-		handleErrorResponse(c, "执行命令失败", err)
-		return
-	} else {
-		// 返回执行命令成功的消息和执行 ID
-		c.JSON(200, gin.H{
-			"message": "执行命令成功",
-			"exec_id": execID.ID,
-		})
-	}
 
-	util.Info("执行命令成功 容器 ID: " + req.ID + " 命令: " + fmt.Sprintf("%v", req.Cmd))
-	return
+	var responses []string
 
+	for _, cmd := range req.Cmds {
+		response, err := ExecRconCommand(util.FullName(req.Name), cmd)
+		if err != nil {
+			handleErrorResponse(c, "执行命令失败", err)
+			return
+		} else {
+			responses = append(responses, response)
+			util.Info("执行命令成功 命令: " + cmd + " 响应: " + response)
+		}
+	}
+	// 返回执行命令的响应
+	c.JSON(200, gin.H{
+		"message":   "执行命令成功",
+		"responses": responses,
+	})
 }

@@ -51,6 +51,11 @@ type Config struct {
 		LogMaxAge     int    `mapstructure:"log_max_age"`
 		LogCompress   bool   `mapstructure:"log_compress"`
 	} `mapstructure:"util"`
+
+	Game struct {
+		SRCDS_TOKEN   string `mapstructure:"srds_token"`
+		RCON_PASSWORD string `mapstructure:"rcon_password"`
+	}
 }
 
 // LoadConfig 加载配置文件

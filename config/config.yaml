@@ -2,7 +2,7 @@ env:
   mode: "debug" # debug, release
   log_level: "debug" # 日志级别 debug, info, warn, error, fatal, panic, trace
 server:
-  port: 8080
+  port: 8080 # API服务端口
 
 docker:
   image_name: "joedwards32/cs2" # 镜像名称
@@ -19,3 +19,7 @@ util:
   log_max_backups: 5 # 日志文件最大备份数
   log_max_age: 30 # 日志文件最大保存天数
   log_compress: true # 是否压缩日志文件
+
+game:
+  srcds_token: "0CB0CF618FD85A917FAC3F074244E801" # SRCDS_TOKEN
+  rcon_password: "123456"
