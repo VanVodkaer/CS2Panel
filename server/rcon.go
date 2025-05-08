@@ -21,7 +21,7 @@ func ExecRconCommand(name string, command string) (string, error) {
 		return "", fmt.Errorf("获取Rcon端口失败，请检查容器是否存在或Rcon端口是否正确配置")
 	}
 	// 创建Rcon客户端
-	client := rcon.New(fmt.Sprintf("localhost:%p", &port), config.GlobalConfig.Game.RCON_PASSWORD, 1*time.Second)
+	client := rcon.New(fmt.Sprintf("localhost:%d", port), config.GlobalConfig.Game.RCON_PASSWORD, 1*time.Second)
 
 	response, err := client.Execute(command)
 	if err != nil {
@@ -32,7 +32,7 @@ func ExecRconCommand(name string, command string) (string, error) {
 }
 
 // GetRconPort 获取Rcon端口
-func GetRconPort(id string) int {
+func GetRconPort(name string) int {
 	// 获取所有容器
 	containers, err := docker.Cli.ContainerList(context.Background(), container.ListOptions{
 		All:     true,
@@ -45,17 +45,19 @@ func GetRconPort(id string) int {
 
 	for _, c := range containers {
 		// 检查容器ID是否匹配
-		if strings.Contains(c.ID, id) {
+		if strings.Contains(c.Names[0], name) {
 			// 遍历容器的端口映射
 			tcpPorts := make(map[uint16]bool)
 			udpPorts := make(map[uint16]bool)
 
+			fmt.Printf("%+v\n", c.Ports)
+
 			for _, port := range c.Ports {
 				switch port.Type {
 				case "tcp":
-					tcpPorts[port.PrivatePort] = true
+					tcpPorts[port.PublicPort] = true
 				case "udp":
-					udpPorts[port.PrivatePort] = true
+					udpPorts[port.PublicPort] = true
 				}
 			}
 

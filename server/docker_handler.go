@@ -93,7 +93,7 @@ func containerCreateHandler(c *gin.Context) {
 	// 获取当前工作目录
 	cwd, err := os.Getwd()
 	// 绑定路径拼接
-	bindPath := fmt.Sprintf("%s:/home/steam/cs2-dedicated", filepath.Join(cwd, "cs2-data"))
+	csBindPath := fmt.Sprintf("%s:/home/steam/cs2-dedicated", filepath.Join(cwd, "cs2-data"))
 
 	if err != nil {
 		handleErrorResponse(c, "获取当前工作目录失败", err)
@@ -109,7 +109,7 @@ func containerCreateHandler(c *gin.Context) {
 		},
 		Env: []string{
 			fmt.Sprintf("SRCDS_TOKEN=%s", config.GlobalConfig.Game.SRCDS_TOKEN),
-			fmt.Sprintf("RCON_PASSWORD=%s", config.GlobalConfig.Game.RCON_PASSWORD),
+			fmt.Sprintf("CS2_RCONPW=%s", config.GlobalConfig.Game.RCON_PASSWORD),
 		},
 	}
 
@@ -123,7 +123,7 @@ func containerCreateHandler(c *gin.Context) {
 			}},
 		},
 		Binds: []string{
-			bindPath,
+			csBindPath,
 		},
 	}
 	// 如果 WatchPort 不为空，则添加 27020/udp
@@ -264,6 +264,11 @@ func containerRemoveHandler(c *gin.Context) {
 	var req ContainerStartRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
+		return
+	}
+	// 先停止容器
+	if err := docker.Cli.ContainerStop(context.Background(), util.FullName(req.Name), container.StopOptions{}); err != nil {
+		handleErrorResponse(c, "停止容器失败", err)
 		return
 	}
 	// 删除容器
