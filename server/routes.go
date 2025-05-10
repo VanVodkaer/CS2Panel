@@ -7,24 +7,35 @@ import (
 // ServerSetRouter 设置 Web 应用的路由
 func ServerSetRouter(router *gin.Engine) {
 
-	api := router.Group("/api")
+	apiGroup := router.Group("/api")
 	{
-		docker := api.Group("/docker")
+		dockerGroup := apiGroup.Group("/docker")
 		{
-			docker.Any("/ping", pingHandler)
-			image := docker.Group("/image")
+			dockerGroup.Any("/ping", pingHandler)
+			imageGroup := dockerGroup.Group("/image")
 			{
-				image.POST("/pull", imagePullHandler)
+				imageGroup.POST("/pull", imagePullHandler)
+				imageGroup.GET("/pull/status", imagePullStatusHandler)
 			}
-			container := docker.Group("/container")
+			containerGroup := dockerGroup.Group("/container")
 			{
-				container.GET("/list", containerListHandler)
-				container.POST("/create", containerCreateHandler)
-				container.POST("/start", containerStartHandler)
-				container.POST("/stop", containerStopHandler)
-				container.POST("/restart", containerRestartHandler)
-				container.POST("/remove", containerRemoveHandler)
-				container.POST("/exec", containerExecHandler)
+				containerGroup.GET("/list", containerListHandler)
+				containerGroup.POST("/create", containerCreateHandler)
+				containerGroup.POST("/start", containerStartHandler)
+				containerGroup.POST("/stop", containerStopHandler)
+				containerGroup.POST("/restart", containerRestartHandler)
+				containerGroup.POST("/remove", containerRemoveHandler)
+				containerGroup.POST("/exec", containerExecHandler)
+			}
+
+		}
+		infoGroup := apiGroup.Group("/info")
+		{
+			mapGroup := infoGroup.Group("/map")
+			{
+				mapGroup.POST("/update", infoMapUpdateHandler)
+				mapGroup.GET("/list", infoMapListHandler)
+
 			}
 
 		}

@@ -31,7 +31,8 @@ type Config struct {
 	} `mapstructure:"env"`
 
 	Server struct {
-		Port int `mapstructure:"port"`
+		Port         int    `mapstructure:"port"`
+		PanelDataDir string `mapstructure:"panel_data_dir"`
 	} `mapstructure:"server"`
 
 	Docker struct {
@@ -41,6 +42,7 @@ type Config struct {
 		Prefix     string `mapstructure:"prefix"`
 		MaxRetries int    `mapstructure:"max_retries"`
 		RetryDelay int    `mapstructure:"retry_delay"`
+		CSDataDir  string `mapstructure:"cs_data_dir"`
 	} `mapstructure:"docker"`
 
 	Util struct {

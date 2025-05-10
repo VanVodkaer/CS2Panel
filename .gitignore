@@ -26,3 +26,5 @@ go.work.sum
 
 logs
 cs2-data
+panel-data
+config/config.yaml

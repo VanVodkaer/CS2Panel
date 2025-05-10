@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/VanVodkaer/CS2Panel/config"
 	"github.com/VanVodkaer/CS2Panel/docker"
@@ -33,20 +35,61 @@ func pingHandler(c *gin.Context) {
 	util.Info(fmt.Sprintf("Docker 服务正在运行, Ping 信息: %+v", ping))
 }
 
-// imagePullHandler 处理拉取 Docker 镜像的请求
+// imagePullHandler 异步处理拉取 Docker 镜像的请求
+var pullStatus sync.Map // key: imageName, value: status(string)
 func imagePullHandler(c *gin.Context) {
-	reader, err := docker.Cli.ImagePull(context.Background(), config.GlobalConfig.Docker.ImageName, image.PullOptions{})
-	if err != nil {
-		handleErrorResponse(c, "拉取 Docker 镜像失败", err)
+	imageName := config.GlobalConfig.Docker.ImageName
+	_, loaded := pullStatus.LoadOrStore(imageName, "pulling")
+	if loaded {
+		c.JSON(http.StatusOK, gin.H{"message": "镜像正在拉取中"})
 		return
 	}
-	defer reader.Close()
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "拉取 Docker 镜像成功",
+	go func() {
+		defer pullStatus.Delete(imageName)
+
+		reader, err := docker.Cli.ImagePull(context.Background(), imageName, image.PullOptions{})
+		if err != nil {
+			util.Error("拉取失败：", err)
+			pullStatus.Store(imageName, "failed")
+			return
+		}
+		defer reader.Close()
+
+		decoder := json.NewDecoder(reader)
+		for decoder.More() {
+			var msg map[string]interface{}
+			if err := decoder.Decode(&msg); err != nil {
+				pullStatus.Store(imageName, "failed")
+				return
+			}
+			if msg["error"] != nil {
+				pullStatus.Store(imageName, "failed")
+				return
+			}
+		}
+
+		pullStatus.Store(imageName, "success")
+		util.Info("镜像拉取成功")
+	}()
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"message": "已开始拉取镜像",
 	})
+}
 
-	util.Info("拉取 Docker 镜像成功")
+// imagePullStatusHandler 处理获取 Docker 镜像拉取状态的请求
+func imagePullStatusHandler(c *gin.Context) {
+	imageName := config.GlobalConfig.Docker.ImageName
+	if status, ok := pullStatus.Load(imageName); ok {
+		c.JSON(http.StatusOK, gin.H{
+			"status": status,
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "not_started",
+		})
+	}
 }
 
 // containerListHandler 处理获取 Docker 容器列表的请求
@@ -90,15 +133,22 @@ func containerCreateHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
+
 	// 获取当前工作目录
 	cwd, err := os.Getwd()
-	// 绑定路径拼接
-	csBindPath := fmt.Sprintf("%s:/home/steam/cs2-dedicated", filepath.Join(cwd, "cs2-data"))
-
 	if err != nil {
 		handleErrorResponse(c, "获取当前工作目录失败", err)
 		return
 	}
+
+	// 路径绑定参数
+	csBindPath := fmt.Sprintf("%s:/home/steam/cs2-dedicated", filepath.Join(cwd, config.GlobalConfig.Docker.CSDataDir))
+
+	// 自定义的环境变量
+	srcds_token := fmt.Sprintf("SRCDS_TOKEN=%s", config.GlobalConfig.Game.SRCDS_TOKEN)
+	cs2_server_name := fmt.Sprintf("CS2_SERVER_NAME=%s", req.ServerName)
+	cs2_rconpw := fmt.Sprintf("CS2_RCONPW=%s", config.GlobalConfig.Game.RCON_PASSWORD)
+
 	// 定义容器的创建配置
 	containerConfig := &container.Config{
 		Image: config.GlobalConfig.Docker.ImageName,
@@ -108,8 +158,9 @@ func containerCreateHandler(c *gin.Context) {
 			"27020/udp": {}, // 观战服务器端口
 		},
 		Env: []string{
-			fmt.Sprintf("SRCDS_TOKEN=%s", config.GlobalConfig.Game.SRCDS_TOKEN),
-			fmt.Sprintf("CS2_RCONPW=%s", config.GlobalConfig.Game.RCON_PASSWORD),
+			srcds_token,
+			cs2_rconpw,
+			cs2_server_name,
 		},
 	}
 
@@ -134,7 +185,7 @@ func containerCreateHandler(c *gin.Context) {
 	}
 
 	// 创建容器
-	createResp, err := docker.Cli.ContainerCreate(context.Background(), containerConfig, hostConfig, nil, nil, util.FullName(req.Name))
+	createResp, err := docker.Cli.ContainerCreate(context.Background(), containerConfig, hostConfig, nil, nil, FullName(req.Name))
 	if err != nil {
 		handleErrorResponse(c, "创建容器失败", err)
 		return
@@ -164,7 +215,7 @@ func containerStartHandler(c *gin.Context) {
 		return
 	}
 	// 启动容器
-	err := docker.Cli.ContainerStart(context.Background(), util.FullName(req.Name), container.StartOptions{})
+	err := docker.Cli.ContainerStart(context.Background(), FullName(req.Name), container.StartOptions{})
 	if err != nil {
 		handleErrorResponse(c, "启动容器失败", err)
 		return
@@ -174,7 +225,7 @@ func containerStartHandler(c *gin.Context) {
 		var responses []string
 
 		for _, cmd := range req.Cmds {
-			response, err := ExecRconCommand(util.FullName(req.Name), cmd)
+			response, err := ExecRconCommand(FullName(req.Name), cmd)
 			if err != nil {
 				handleErrorResponse(c, "执行命令失败", err)
 				return
@@ -213,7 +264,7 @@ func containerStopHandler(c *gin.Context) {
 		return
 	}
 	// 停止容器
-	if err := docker.Cli.ContainerStop(context.Background(), util.FullName(req.Name), container.StopOptions{}); err != nil {
+	if err := docker.Cli.ContainerStop(context.Background(), FullName(req.Name), container.StopOptions{}); err != nil {
 		handleErrorResponse(c, "停止容器失败", err)
 		return
 	} else {
@@ -240,7 +291,7 @@ func containerRestartHandler(c *gin.Context) {
 		return
 	}
 	// 重启容器
-	if err := docker.Cli.ContainerRestart(context.Background(), util.FullName(req.Name), container.StopOptions{}); err != nil {
+	if err := docker.Cli.ContainerRestart(context.Background(), FullName(req.Name), container.StopOptions{}); err != nil {
 		handleErrorResponse(c, "重启容器失败", err)
 		return
 	} else {
@@ -267,12 +318,12 @@ func containerRemoveHandler(c *gin.Context) {
 		return
 	}
 	// 先停止容器
-	if err := docker.Cli.ContainerStop(context.Background(), util.FullName(req.Name), container.StopOptions{}); err != nil {
+	if err := docker.Cli.ContainerStop(context.Background(), FullName(req.Name), container.StopOptions{}); err != nil {
 		handleErrorResponse(c, "停止容器失败", err)
 		return
 	}
 	// 删除容器
-	if err := docker.Cli.ContainerRemove(context.Background(), util.FullName(req.Name), container.RemoveOptions{}); err != nil {
+	if err := docker.Cli.ContainerRemove(context.Background(), FullName(req.Name), container.RemoveOptions{}); err != nil {
 		handleErrorResponse(c, "删除容器失败", err)
 		return
 	} else {
@@ -303,7 +354,7 @@ func containerExecHandler(c *gin.Context) {
 	var responses []string
 
 	for _, cmd := range req.Cmds {
-		response, err := ExecRconCommand(util.FullName(req.Name), cmd)
+		response, err := ExecRconCommand(FullName(req.Name), cmd)
 		if err != nil {
 			handleErrorResponse(c, "执行命令失败", err)
 			return

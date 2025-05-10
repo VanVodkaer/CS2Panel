@@ -3,6 +3,7 @@ env:
   log_level: "debug" # 日志级别 debug, info, warn, error, fatal, panic, trace
 server:
   port: 8080 # API服务端口
+  panel_data_dir: "/panel-data" # 面板数据目录
 
 docker:
   image_name: "joedwards32/cs2" # 镜像名称
@@ -11,6 +12,7 @@ docker:
   prefix: "cs2panel" # 镜像前缀
   max_retries: 3 # 重连重试次数
   retry_delay: 1 # 重连重试间隔
+  cs_data_dir: "/cs2-data"
 
 util:
   log_dir: "./logs" # 日志路径
@@ -21,5 +23,5 @@ util:
   log_compress: true # 是否压缩日志文件
 
 game:
-  srcds_token: "0CB0CF618FD85A917FAC3F074244E801" # SRCDS_TOKEN
+  srcds_token: "A6BE4B595479F52B7D75E5297375664B" # SRCDS_TOKEN
   rcon_password: "123456"
