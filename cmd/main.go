@@ -7,20 +7,19 @@ import (
 )
 
 func main() {
-
 	// 创建并初始化 Web 应用
 	app, err := server.ServerNewApp()
 	if err != nil {
 		util.Error("初始化 Web 应用失败: %v", err)
-	} else {
-		util.Info("初始化 Web 应用成功")
+		return
 	}
+	util.Info("初始化 Web 应用成功")
+
 	// 启动 Web 服务器
 	app.ServerStart()
 
-	// 关闭 Docker 客户端
+	// 延迟关闭 Docker 客户端
 	defer docker.Cli.Close()
 
 	util.Warn("程序已退出")
-	return
 }

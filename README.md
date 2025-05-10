@@ -9,11 +9,10 @@
 
 ## 📦 安装 & 运行
 
-1. 编辑config目录下的`config.yaml`文件
-
-2. 运行 Docker
-
-3. 运行以下命令
+1. 编辑config目录下的 `config.yaml` 文件
+2. 编辑根目录下的 `.env` 文件
+3. 运行 Docker
+4. 运行以下命令
 
 ```bash
 # 克隆仓库
@@ -61,4 +60,3 @@ go run ./cmd
 ## 📄 许可证
 
 本项目采用 MIT 许可证，详情请见 [LICENSE](https://github.com/VanVodkaer/CS2Panel/blob/main/LICENSE)。
-

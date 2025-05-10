@@ -31,8 +31,10 @@ type Config struct {
 	} `mapstructure:"env"`
 
 	Server struct {
-		Port         int    `mapstructure:"port"`
-		PanelDataDir string `mapstructure:"panel_data_dir"`
+		Port          int    `mapstructure:"port"`
+		PanelDataDir  string `mapstructure:"panel_data_dir"`
+		WebServer     bool   `mapstructure:"web_server"`
+		WebServerPort int    `mapstructure:"web_server_port"`
 	} `mapstructure:"server"`
 
 	Docker struct {

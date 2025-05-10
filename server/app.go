@@ -2,19 +2,20 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/VanVodkaer/CS2Panel/config"
 	"github.com/VanVodkaer/CS2Panel/util"
 	"github.com/gin-gonic/gin"
 )
 
-// App 结构体 包含 Gin 引擎和应用配置
+// App 结构体 包含应用配置
 type App struct {
-	Router *gin.Engine
 	Config *config.Config
 }
 
-func init() { // 将 Gin 设置为 release 模式
+// 初始化 Gin 模式
+func init() {
 	if config.GlobalConfig.Env.Mode == "release" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -22,26 +23,53 @@ func init() { // 将 Gin 设置为 release 模式
 
 // ServerNewApp 创建并初始化一个新的 Web 应用
 func ServerNewApp() (*App, error) {
-	// 初始化 Gin 路由器
-	router := gin.Default()
-	// 设置 Web 应用的路由
-	ServerSetRouter(router)
-
-	// 返回初始化的应用
 	return &App{
-		Router: router,
 		Config: config.GlobalConfig,
 	}, nil
 }
 
-// ServerStart 启动 Web 服务器
+// ServerStart 启动 API 和 Web 服务（根据配置判断是否分端口）
 func (app *App) ServerStart() {
-	// 使用配置中的端口号
-	port := fmt.Sprintf(":%d", app.Config.Server.Port)
-	util.Info("服务器运行端口" + port)
+	cfg := app.Config
 
-	// 启动服务器
-	if err := app.Router.Run(port); err != nil {
-		util.Error("服务器启动失败: %v", err)
+	// 启动 API 服务
+	go func() {
+		router := gin.Default()
+		// 注册 API 路由
+		ServerSetRouter(router)
+
+		// 如果 Web 服务启用且端口一致，注册 Web 静态路由
+		if cfg.Server.WebServer && cfg.Server.WebServerPort == cfg.Server.Port {
+			WebServerSetRouter(router)
+		}
+
+		addr := fmt.Sprintf(":%d", cfg.Server.Port)
+		util.Info("API 服务监听地址: " + addr)
+
+		if err := http.ListenAndServe(addr, router); err != nil {
+			util.Error("API 服务启动失败: %v", err)
+		}
+	}()
+
+	// 启动独立 Web 服务（如果启用且端口不同）
+	if cfg.Server.WebServer && cfg.Server.WebServerPort != cfg.Server.Port {
+		go func() {
+			webRouter := gin.Default()
+			WebServerSetRouter(webRouter)
+
+			addr := fmt.Sprintf(":%d", cfg.Server.WebServerPort)
+			util.Info("Web 服务监听地址: " + addr)
+
+			if err := http.ListenAndServe(addr, webRouter); err != nil {
+				util.Error("Web 服务启动失败: %v", err)
+			}
+		}()
+	} else if !cfg.Server.WebServer {
+		util.Warn("Web 服务未启用")
+	} else {
+		util.Info("Web 服务与 API 服务共用同一端口")
 	}
+
+	// 阻塞主线程，防止退出
+	select {}
 }
