@@ -1,0 +1,8 @@
+/* src/pages/Dashboard/index.less */
+.dashboard-container {
+  padding: 24px;
+  background: #f0f2f5;
+}
+.dashboard-header {
+  margin-bottom: 24px;
+}

@@ -1,0 +1,37 @@
+/* layout/MainLayout/index.less */
+.logo {
+  height: 32px;
+  margin: 16px;
+  color: #fff;
+  text-align: center;
+}
+
+.mainlayout-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: row;
+
+  .layout-header {
+    background: #fff;
+    padding: 0 20px;
+    /* 可以根据需要调整顶部导航栏样式 */
+  }
+
+  .sider {
+    width: 200px; /* 设置左侧导航栏宽度 */
+    height: 100vh; /* 固定左侧导航栏高度 */
+    position: fixed; /* 固定导航栏 */
+    top: 0;
+    left: 0;
+    z-index: 1; /* 确保导航栏在其他内容之上 */
+  }
+
+  .layout-content {
+    flex: 1;
+    margin-left: 200px; /* 给右侧内容区域留出左侧导航栏的空间 */
+    overflow: auto; /* 使右侧内容区域可以滚动 */
+    padding: 20px;
+    height: 100vh; /* 确保内容区填满剩余的屏幕高度 */
+    box-sizing: border-box; /* 确保 padding 不影响布局 */
+  }
+}

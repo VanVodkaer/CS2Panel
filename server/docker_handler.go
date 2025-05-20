@@ -119,10 +119,54 @@ func containerListHandler(c *gin.Context) {
 
 // DockerCreateRequest 定义创建 Docker 容器的请求参数
 type ContainerCreateRequest struct {
-	Name       string `json:"name" binding:"required"` // 容器名称
-	ServerName string `json:"server_name"`             // 游戏服务器名称
-	GamePort   string `json:"game_port"`               // 用于游戏服务器和Rcon的端口
-	WatchPort  string `json:"watch_port"`              // 用于观战服务器状态的端口
+	// 容器名称 (必填)
+	Name string `json:"name" binding:"required"`
+
+	// 容器创建时确定的参数
+	// 用于游戏服务器和Rcon的端口 (可选，默认值为 "27015")
+	CS2_PORT string `json:"cs2_port"` // 游戏服务器端口，默认值 "27015"
+	// 用于Rcon的端口 (可选，默认值为 "27015")
+	CS2_RCON_PORT string `json:"cs2_rcon_port"` // RCON 端口，默认值 "27015"
+	// 用于观战服务器状态的端口 (可选，默认值为 "27020")
+	TV_PORT string `json:"tv_port"` // SourceTV 端口，默认值 "27020"
+	// 是否为局域网模式 (可选，默认值为 "0"，"0"为局域网模式，"1"为非局域网模式)
+	CS2_LAN string `json:"cs2_lan"` // 局域网模式，默认值 "0"
+	// 最大玩家数 (可选)
+	CS2_MAXPLAYERS string `json:"cs2_maxplayers"` // 最大玩家数
+	// 游戏开始地图 (可选)
+	CS2_STARTMAP string `json:"cs2_startmap"` // 启动地图，例如 "de_inferno"
+	// 地图组 (可选)
+	CS2_MAPGROUP string `json:"cs2_mapgroup"` // 地图组名称，例如 "mg_active"
+
+	// 容器运行时的参数（这些可以通过控制台或 RCON 动态修改）
+	// 服务器名称
+	CS2_SERVERNAME string `json:"cs2_servername"` // 服务器名称
+	// RCON 密码
+	CS2_RCONPW string `json:"cs2_rconpw"` // RCON 密码
+	// 连接密码
+	CS2_PW string `json:"cs2_pw"` // 服务器连接密码
+	// 是否允许作弊 (可选，默认值为 "0"，"0" 禁止作弊，"1" 允许作弊)
+	CS2_CHEATS string `json:"cs2_cheats"` // 作弊模式，默认值 "0"
+	// 是否启用 SourceTV (可选，默认值为 "0"，"0" 禁用，"1" 启用)
+	CS2_TV_ENABLE string `json:"cs2_tv_enable"` // 启用 SourceTV，默认值 "0"
+	// SourceTV 密码
+	CS2_TV_PW string `json:"cs2_tv_pw"` // SourceTV 观看密码
+	// SourceTV 延迟 (可选)
+	CS2_TV_DELAY string `json:"cs2_tv_delay"` // SourceTV 延迟，单位为秒
+	// 自动录制 SourceTV (可选，默认值为 "0"，"0" 禁用，"1" 启用)
+	CS2_TV_AUTORECORD string `json:"cs2_tv_autorecord"` // 启用 SourceTV 自动录制，默认值 "0"
+	// 机器人数量 (可选，默认值为 "0")
+	CS2_BOT_QUOTA string `json:"cs2_bot_quota"` // 机器人数量
+	// 机器人难度 (可选，默认值为 "1"，"0" 最容易，"3" 最难)
+	CS2_BOT_DIFFICULTY string `json:"cs2_bot_difficulty"` // 机器人难度，默认值 "1"
+	// 是否开启比赛模式 (可选，默认值为 "0" 启用，"1" 禁用)
+	CS2_COMPETITIVE_MODE string `json:"cs2_competitive_mode"` // 比赛模式，默认值 "0"
+	// 日志记录是否启用 (可选，默认值为 "1"，"1" 启用，"0" 禁用)
+	CS2_LOGGING_ENABLED string `json:"cs2_logging_enabled"` // 日志记录启用，默认值 "1"
+	// 游戏模式 (可选，默认值为 "0"，"0" 为休闲模式，"1" 为竞技模式)
+	CS2_GAMEMODE string `json:"cs2_gamemode"` // 游戏模式，默认值 "0"
+	// 游戏类型 (可选，默认值为 "0"，"0" 为普通游戏，"1" 为死亡竞赛)
+	CS2_GAMETYPE string `json:"cs2_gametype"` // 游戏类型，默认值 "0"
 }
 
 // containerCreateHandler 处理创建 Docker 容器的请求
@@ -144,44 +188,60 @@ func containerCreateHandler(c *gin.Context) {
 	// 路径绑定参数
 	csBindPath := fmt.Sprintf("%s:/home/steam/cs2-dedicated", filepath.Join(cwd, config.GlobalConfig.Docker.CSDataDir))
 
-	// 自定义的环境变量
-	srcds_token := fmt.Sprintf("SRCDS_TOKEN=%s", config.GlobalConfig.Game.SRCDS_TOKEN)
-	cs2_server_name := fmt.Sprintf("CS2_SERVER_NAME=%s", req.ServerName)
-	cs2_rconpw := fmt.Sprintf("CS2_RCONPW=%s", config.GlobalConfig.Game.RCON_PASSWORD)
-
 	// 定义容器的创建配置
 	containerConfig := &container.Config{
 		Image: config.GlobalConfig.Docker.ImageName,
 		ExposedPorts: nat.PortSet{
-			"27015/tcp": {}, // Rcon端口
-			"27015/udp": {}, // 游戏服务器端口
-			"27020/udp": {}, // 观战服务器端口
+			nat.Port(fmt.Sprintf("%s/tcp", util.DefaultIfEmpty(req.CS2_RCON_PORT, "27015"))): {}, // RCON 端口
+			nat.Port(fmt.Sprintf("%s/udp", util.DefaultIfEmpty(req.CS2_PORT, "27015"))):      {}, // 游戏服务器端口
+			nat.Port(fmt.Sprintf("%s/udp", util.DefaultIfEmpty(req.TV_PORT, "27020"))):       {}, // SourceTV 端口
 		},
 		Env: []string{
-			srcds_token,
-			cs2_rconpw,
-			cs2_server_name,
+			// 固定环境变量
+			fmt.Sprintf("SRCDS_TOKEN=%s", config.GlobalConfig.Game.SRCDS_TOKEN),
+
+			// 端口信息
+			fmt.Sprintf("CS2_PORT=%s", util.DefaultIfEmpty(req.CS2_PORT, "27015")),
+			fmt.Sprintf("CS2_RCON_PORT=%s", util.DefaultIfEmpty(req.CS2_RCON_PORT, "27015")),
+			fmt.Sprintf("TV_PORT=%s", util.DefaultIfEmpty(req.TV_PORT, "27020")),
+
+			// 其它环境变量
+			fmt.Sprintf("CS2_SERVERNAME=%s", util.DefaultIfEmpty(req.CS2_SERVERNAME, "Van_Vodkaer's CS2 Server")),
+			fmt.Sprintf("CS2_PW=%s", util.DefaultIfEmpty(req.CS2_PW, "")),
+			fmt.Sprintf("CS2_RCONPW=%s", util.DefaultIfEmpty(req.CS2_RCONPW, config.GlobalConfig.Game.RCON_PASSWORD)),
+			fmt.Sprintf("CS2_CHEATS=%s", util.DefaultIfEmpty(req.CS2_CHEATS, "0")),
+			fmt.Sprintf("CS2_TV_ENABLE=%s", util.DefaultIfEmpty(req.CS2_TV_ENABLE, "0")),
+			fmt.Sprintf("CS2_TV_PW=%s", util.DefaultIfEmpty(req.CS2_TV_PW, "")),
+			fmt.Sprintf("CS2_TV_DELAY=%s", util.DefaultIfEmpty(req.CS2_TV_DELAY, "0")),
+			fmt.Sprintf("CS2_TV_AUTORECORD=%s", util.DefaultIfEmpty(req.CS2_TV_AUTORECORD, "0")),
+			fmt.Sprintf("CS2_BOT_QUOTA=%s", util.DefaultIfEmpty(req.CS2_BOT_QUOTA, "0")),
+			fmt.Sprintf("CS2_BOT_DIFFICULTY=%s", util.DefaultIfEmpty(req.CS2_BOT_DIFFICULTY, "1")),
+			fmt.Sprintf("CS2_COMPETITIVE_MODE=%s", util.DefaultIfEmpty(req.CS2_COMPETITIVE_MODE, "0")),
+			fmt.Sprintf("CS2_LOGGING_ENABLED=%s", util.DefaultIfEmpty(req.CS2_LOGGING_ENABLED, "1")),
+			fmt.Sprintf("CS2_GAMEMODE=%s", util.DefaultIfEmpty(req.CS2_GAMEMODE, "0")),
+			fmt.Sprintf("CS2_GAMETYPE=%s", util.DefaultIfEmpty(req.CS2_GAMETYPE, "0")),
+			fmt.Sprintf("CS2_LAN=%s", util.DefaultIfEmpty(req.CS2_LAN, "0")),
+			fmt.Sprintf("CS2_MAXPLAYERS=%s", util.DefaultIfEmpty(req.CS2_MAXPLAYERS, "")),
+			fmt.Sprintf("CS2_STARTMAP=%s", util.DefaultIfEmpty(req.CS2_STARTMAP, "")),
+			fmt.Sprintf("CS2_MAPGROUP=%s", util.DefaultIfEmpty(req.CS2_MAPGROUP, "")),
 		},
 	}
 
 	hostConfig := &container.HostConfig{
 		PortBindings: nat.PortMap{
-			"27015/tcp": []nat.PortBinding{{
-				HostPort: util.DefaultIfEmpty(req.GamePort, "27015"),
+			nat.Port(fmt.Sprintf("%s/tcp", util.DefaultIfEmpty(req.CS2_RCON_PORT, "27015"))): []nat.PortBinding{{
+				HostPort: util.DefaultIfEmpty(req.CS2_RCON_PORT, "27015"),
 			}},
-			"27015/udp": []nat.PortBinding{{
-				HostPort: util.DefaultIfEmpty(req.GamePort, "27015"),
+			nat.Port(fmt.Sprintf("%s/udp", util.DefaultIfEmpty(req.CS2_PORT, "27015"))): []nat.PortBinding{{
+				HostPort: util.DefaultIfEmpty(req.CS2_PORT, "27015"),
+			}},
+			nat.Port(fmt.Sprintf("%s/udp", util.DefaultIfEmpty(req.TV_PORT, "27020"))): []nat.PortBinding{{
+				HostPort: util.DefaultIfEmpty(req.TV_PORT, "27020"),
 			}},
 		},
 		Binds: []string{
 			csBindPath,
 		},
-	}
-	// 如果 WatchPort 不为空，则添加 27020/udp
-	if req.WatchPort != "" {
-		hostConfig.PortBindings["27020/udp"] = []nat.PortBinding{{
-			HostPort: req.WatchPort,
-		}}
 	}
 
 	// 创建容器
@@ -258,7 +318,7 @@ type ContainerStopRequest struct {
 // containerStopHandler 处理停止 Docker 容器的请求
 func containerStopHandler(c *gin.Context) {
 	// 从请求中解析参数
-	var req ContainerStartRequest
+	var req ContainerStopRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return

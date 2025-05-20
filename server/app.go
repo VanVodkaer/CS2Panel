@@ -3,9 +3,11 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/VanVodkaer/CS2Panel/config"
 	"github.com/VanVodkaer/CS2Panel/util"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -35,6 +37,15 @@ func (app *App) ServerStart() {
 	// 启动 API 服务
 	go func() {
 		router := gin.Default()
+		// 允许所有跨域请求
+		router.Use(cors.New(cors.Config{
+			AllowOrigins:     []string{"*"},                            // 允许所有域
+			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"}, // 允许的 HTTP 方法
+			AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+			ExposeHeaders:    []string{"Content-Length"},
+			AllowCredentials: true,           // 是否允许带 Cookie
+			MaxAge:           12 * time.Hour, // 预检请求的有效期
+		}))
 		// 注册 API 路由
 		ServerSetRouter(router)
 

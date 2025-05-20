@@ -1,3 +1,4 @@
+// /config/axiosConfig.js
 import axios from "axios";
 
 // 从 import.meta.env 中读取环境变量

@@ -293,7 +293,7 @@
 
 ### 8. 删除容器
 
-- **接口** ：`POST /api/docker/container/remove`
+- **接口** ：`DELETE /api/docker/container/remove`
 - **请求参数同上**
 - **返回** ：
 

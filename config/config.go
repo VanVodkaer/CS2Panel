@@ -57,7 +57,7 @@ type Config struct {
 	} `mapstructure:"util"`
 
 	Game struct {
-		SRCDS_TOKEN   string `mapstructure:"srds_token"`
+		SRCDS_TOKEN   string `mapstructure:"srcds_token"`
 		RCON_PASSWORD string `mapstructure:"rcon_password"`
 	}
 }

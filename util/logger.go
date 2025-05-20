@@ -54,10 +54,6 @@ func init() {
 	// 设置日志级别
 	var level logrus.Level
 	switch logLevel {
-	case "panic":
-		level = logrus.PanicLevel
-	case "fatal":
-		level = logrus.FatalLevel
 	case "error":
 		level = logrus.ErrorLevel
 	case "warn":
@@ -66,8 +62,6 @@ func init() {
 		level = logrus.InfoLevel
 	case "debug":
 		level = logrus.DebugLevel
-	case "trace":
-		level = logrus.TraceLevel
 	default:
 		logrus.Warnf("错误的日志级别: %s, 设置默认级别Info", level)
 		level = logrus.InfoLevel

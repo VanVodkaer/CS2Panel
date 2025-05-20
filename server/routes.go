@@ -26,7 +26,7 @@ func ServerSetRouter(router *gin.Engine) {
 				containerGroup.POST("/start", containerStartHandler)
 				containerGroup.POST("/stop", containerStopHandler)
 				containerGroup.POST("/restart", containerRestartHandler)
-				containerGroup.POST("/remove", containerRemoveHandler)
+				containerGroup.DELETE("/remove", containerRemoveHandler)
 				containerGroup.POST("/exec", containerExecHandler)
 			}
 		}
