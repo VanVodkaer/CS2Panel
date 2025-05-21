@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Row, Col, Typography, Space, Button, Table, Popconfirm, message } from "antd";
+import { Row, Col, Typography, Space, Button, Table, Popconfirm, message, Checkbox } from "antd";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axiosConfig";
 import "./index.less";
@@ -9,6 +9,7 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [deletingName, setDeletingName] = useState(null); // 跟踪正在删除的容器名
   const [stoppingName, setStoppingName] = useState(null); // 跟踪正在停止的容器名
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]); // 跟踪选中的容器
   const navigate = useNavigate();
 
   // 拉取列表
@@ -57,7 +58,7 @@ const Home = () => {
   const handleRemove = async (name) => {
     setDeletingName(name); // 设置当前正在删除的容器名
     try {
-      await api.delete("/docker/container/remove", { data: { name } }, { timeout: 30000 });
+      await api.delete("/docker/container/remove", { data: { name } }, { timeout: 40000 });
       message.success("容器已删除");
       setTimeout(() => {
         fetchContainers();
@@ -67,6 +68,36 @@ const Home = () => {
     } finally {
       setDeletingName(null); // 清除正在删除状态
     }
+  };
+
+  // 批量操作相关函数
+  const handleSelectChange = (selectedKeys) => {
+    setSelectedRowKeys(selectedKeys);
+  };
+
+  const handleBatchStart = () => {
+    // TODO: 实现批量启动逻辑
+    console.log("批量启动容器:", selectedRowKeys);
+  };
+
+  const handleBatchStop = () => {
+    // TODO: 实现批量停止逻辑
+    console.log("批量停止容器:", selectedRowKeys);
+  };
+
+  const handleBatchRemove = () => {
+    // TODO: 实现批量删除逻辑
+    console.log("批量删除容器:", selectedRowKeys);
+  };
+
+  const handleCopyConnection = (name) => {
+    // TODO: 实现复制连接信息逻辑
+    console.log("复制连接信息:", name);
+  };
+
+  const handleCopySpectate = (name) => {
+    // TODO: 实现复制观战信息逻辑
+    console.log("复制观战信息:", name);
   };
 
   const columns = [
@@ -117,26 +148,68 @@ const Home = () => {
         );
       },
     },
+    {
+      title: "复制信息",
+      key: "copy",
+      render: (_, record) => {
+        const full = record.Names[0];
+        const trimmed = full.includes("-") ? full.substring(full.indexOf("-") + 1) : full;
+        return (
+          <Space size="small">
+            <Button size="small" onClick={() => handleCopyConnection(trimmed)}>
+              连接信息
+            </Button>
+            <Button size="small" onClick={() => handleCopySpectate(trimmed)}>
+              观战信息
+            </Button>
+          </Space>
+        );
+      },
+    },
   ];
+
+  const headerButtons = (
+    <Row justify="space-between" align="middle" className="dashboard-header">
+      <Col>
+        <Typography.Title level={2} style={{ margin: 0 }}>
+          容器列表
+        </Typography.Title>
+      </Col>
+      <Col>
+        <Space size="middle">
+          <Button type="primary" onClick={() => navigate("/container/create")}>
+            创建新容器
+          </Button>
+          {selectedRowKeys.length > 0 && (
+            <>
+              <Button onClick={handleBatchStart}>批量启动</Button>
+              <Button onClick={handleBatchStop}>批量停止</Button>
+              <Button danger onClick={handleBatchRemove}>
+                批量删除
+              </Button>
+            </>
+          )}
+        </Space>
+      </Col>
+    </Row>
+  );
 
   return (
     <div className="dashboard-container">
-      <Row justify="space-between" align="middle" className="dashboard-header">
-        <Col>
-          <Typography.Title level={2} style={{ margin: 0 }}>
-            容器列表
-          </Typography.Title>
-        </Col>
-        <Col>
-          <Space size="middle">
-            <Button type="primary" onClick={() => navigate("/container/create")}>
-              创建新容器
-            </Button>
-          </Space>
-        </Col>
-      </Row>
+      {headerButtons}
 
-      <Table rowKey="Id" columns={columns} dataSource={containers} loading={loading} pagination={false} />
+      <Table
+        rowKey="Id"
+        columns={columns}
+        dataSource={containers}
+        loading={loading}
+        pagination={false}
+        rowSelection={{
+          selectedRowKeys: selectedRowKeys,
+          onChange: handleSelectChange,
+          columnWidth: 50,
+        }}
+      />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { Button, Checkbox, Form, Input, InputNumber, message, Select, Typography } from "antd";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axiosConfig";
 
@@ -14,6 +14,44 @@ const CreateContainer = () => {
   const [availableModes, setAvailableModes] = useState([]);
   const [gameModeDescription, setGameModeDescription] = useState("");
   const [gameTypeDescription, setGameTypeDescription] = useState("");
+
+  // 游戏模式说明更新
+  const handleGameModeChange = useCallback(
+    (selectedMode) => {
+      form.setFieldsValue({ cs2_gamemode: selectedMode }); // 显式更新表单字段值
+
+      if (selectedMode === "0") {
+        setGameModeDescription(
+          "休闲模式：适合放松的游戏模式，死亡后玩家可以快速复活。你可以轻松地享受游戏，不用担心复活时间太长。"
+        );
+      } else if (selectedMode === "1") {
+        setGameModeDescription(
+          "竞技模式：玩家之间有较高的对抗性，死后需要等待复活或游戏结束。通常是更为严肃的游戏体验，适合高手玩家。"
+        );
+      } else if (selectedMode === "2") {
+        setGameModeDescription(
+          "死亡竞赛模式：玩家每次死亡后会立即复活，专注于击杀和持续战斗。适合喜欢快速复活并继续战斗的玩家。"
+        );
+      }
+    },
+    [form]
+  );
+
+  // 游戏类型说明更新
+  const handleGameTypeChange = useCallback(
+    (selectedType) => {
+      form.setFieldsValue({ cs2_gametype: selectedType }); // 显式更新表单字段值
+
+      if (selectedType === "0") {
+        setGameTypeDescription("普通类型：标准的游戏体验，没有特殊规则。适合大多数玩家，带有常规的游戏玩法和目标。");
+      } else if (selectedType === "1") {
+        setGameTypeDescription(
+          "死亡竞赛类型：专注于快速复活和持续战斗，适合喜欢快速节奏的玩家。玩家每次死亡后立即复活，注重击杀和存活。"
+        );
+      }
+    },
+    [form]
+  );
 
   // 获取地图列表
   const fetchMapList = async () => {
@@ -87,38 +125,6 @@ const CreateContainer = () => {
     const selectedMap = mapOptions.find((map) => map.internal_name === selectedMapInternalName);
     if (selectedMap) {
       setAvailableModes(selectedMap.playable_modes);
-    }
-  };
-
-  // 游戏模式说明更新
-  const handleGameModeChange = (selectedMode) => {
-    form.setFieldsValue({ cs2_gamemode: selectedMode }); // 显式更新表单字段值
-
-    if (selectedMode === "0") {
-      setGameModeDescription(
-        "休闲模式：适合放松的游戏模式，死亡后玩家可以快速复活。你可以轻松地享受游戏，不用担心复活时间太长。"
-      );
-    } else if (selectedMode === "1") {
-      setGameModeDescription(
-        "竞技模式：玩家之间有较高的对抗性，死后需要等待复活或游戏结束。通常是更为严肃的游戏体验，适合高手玩家。"
-      );
-    } else if (selectedMode === "2") {
-      setGameModeDescription(
-        "死亡竞赛模式：玩家每次死亡后会立即复活，专注于击杀和持续战斗。适合喜欢快速复活并继续战斗的玩家。"
-      );
-    }
-  };
-
-  // 游戏类型说明更新
-  const handleGameTypeChange = (selectedType) => {
-    form.setFieldsValue({ cs2_gametype: selectedType }); // 显式更新表单字段值
-
-    if (selectedType === "0") {
-      setGameTypeDescription("普通类型：标准的游戏体验，没有特殊规则。适合大多数玩家，带有常规的游戏玩法和目标。");
-    } else if (selectedType === "1") {
-      setGameTypeDescription(
-        "死亡竞赛类型：专注于快速复活和持续战斗，适合喜欢快速节奏的玩家。玩家每次死亡后立即复活，注重击杀和存活。"
-      );
     }
   };
 
