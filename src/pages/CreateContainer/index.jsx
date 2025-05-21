@@ -36,7 +36,7 @@ const CreateContainer = () => {
       cs2_gamemode: "0",
       cs2_gametype: "0",
     }); // 主动设置初始值
-  }, [form]);
+  }, [form, handleGameModeChange, handleGameTypeChange]); // 添加缺失的依赖函数
 
   const onFinish = (values) => {
     // 将数字类型字段转换为字符串

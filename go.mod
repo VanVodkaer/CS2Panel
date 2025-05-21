@@ -5,6 +5,7 @@ go 1.23.4
 require (
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/forewing/csgo-rcon v1.3.0
+	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.0
 )
 
@@ -12,7 +13,6 @@ require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/containerd/log v0.1.0 // indirect
-	github.com/gin-contrib/cors v1.7.5 // indirect
 	github.com/moby/term v0.5.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.35.0 // indirect
@@ -26,7 +26,6 @@ require (
 	github.com/bytedance/sonic v1.13.2 // indirect
 	github.com/bytedance/sonic/loader v0.2.4 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
-	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/docker v27.4.1+incompatible
 	github.com/docker/go-connections v0.5.0

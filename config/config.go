@@ -59,6 +59,7 @@ type Config struct {
 	Game struct {
 		SRCDS_TOKEN   string `mapstructure:"srcds_token"`
 		RCON_PASSWORD string `mapstructure:"rcon_password"`
+		Address       string `mapstructure:"address"`
 	}
 }
 

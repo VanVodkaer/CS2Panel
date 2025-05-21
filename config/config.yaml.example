@@ -27,3 +27,4 @@ util:
 game:
   srcds_token: "" # SRCDS_TOKEN 在 https://steamcommunity.com/dev/managegameservers 申请
   rcon_password: "123456"
+  address: "127.0.0.1"

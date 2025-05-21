@@ -282,17 +282,12 @@ func containerStartHandler(c *gin.Context) {
 	}
 	// 如果提供了命令参数，则执行命令
 	if req.Cmds != nil {
-		var responses []string
-
-		for _, cmd := range req.Cmds {
-			response, err := ExecRconCommand(FullName(req.Name), cmd)
-			if err != nil {
-				handleErrorResponse(c, "执行命令失败", err)
-				return
-			} else {
-				responses = append(responses, response)
-				util.Info("执行命令成功 命令: " + cmd + " 响应: " + response)
-			}
+		responses, err := ExecRconCommands(FullName(req.Name), req.Cmds)
+		if err != nil {
+			handleErrorResponse(c, "执行命令失败", err)
+			return
+		} else {
+			util.Info("执行命令成功 命令: " + fmt.Sprintf("%v", req.Cmds) + " 响应: " + fmt.Sprintf("%v", responses))
 		}
 		// 返回执行命令的响应
 		c.JSON(200, gin.H{

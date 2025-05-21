@@ -29,6 +29,7 @@ func ServerSetRouter(router *gin.Engine) {
 				containerGroup.DELETE("/remove", containerRemoveHandler)
 				containerGroup.POST("/exec", containerExecHandler)
 			}
+
 		}
 
 		infoGroup := apiGroup.Group("/info")
@@ -38,7 +39,21 @@ func ServerSetRouter(router *gin.Engine) {
 				mapGroup.POST("/update", infoMapUpdateHandler)
 				mapGroup.GET("/list", infoMapListHandler)
 			}
+
+			networkGroup := infoGroup.Group("/network")
+			{
+				networkGroup.GET("/addr", networkAddrHandler)
+				networkGroup.GET("/gameport", networkGamePortHandler)
+				networkGroup.GET("/gameports", networkGamePortsHandler)
+				networkGroup.GET("/tvport", networkTVPortHandler)
+				networkGroup.GET("/tvports", networkTVPortsHandler)
+				networkGroup.GET("/gamepasswd", networkGamePasswdHandler)
+				networkGroup.GET("/gamepasswds", networkGamePasswdsHandler)
+				networkGroup.GET("/tvpasswd", networkTVPasswdHandler)
+				networkGroup.GET("/tvpasswds", networkTVPasswdsHandler)
+			}
 		}
+
 	}
 }
 
