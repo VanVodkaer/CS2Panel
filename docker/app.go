@@ -8,6 +8,7 @@ import (
 
 	"github.com/VanVodkaer/CS2Panel/config"
 	"github.com/VanVodkaer/CS2Panel/util"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 )
 
@@ -31,6 +32,9 @@ func init() {
 		util.Error("Docker Daemon 连接失败", err)
 		os.Exit(1)
 	}
+
+	ensureDockerVolume(config.GlobalConfig.Docker.VolumeName)
+
 }
 
 // TestDockerConnection 封装 Docker Daemon 连接测试的逻辑
@@ -56,4 +60,28 @@ func TestDockerConnection() error {
 	// 如果所有重试都失败，返回最终的错误
 	return fmt.Errorf("测试 Docker Daemon 连接失败, 请检查 Docker 服务: %v", err)
 
+}
+
+func ensureDockerVolume(volumeName string) {
+	ctx := context.Background()
+
+	// 尝试检查卷是否存在
+	vol, err := Cli.VolumeInspect(ctx, volumeName)
+	if err != nil {
+		if client.IsErrNotFound(err) {
+			// 卷不存在，尝试创建
+			volReq := volume.CreateOptions{Name: volumeName}
+			newVol, err := Cli.VolumeCreate(ctx, volReq)
+			if err != nil {
+				util.Error("创建卷失败", err)
+				return
+			}
+			util.Info("成功创建卷" + newVol.Name)
+		} else {
+			util.Error("检查卷时出错", err)
+			return
+		}
+	} else {
+		util.Info("卷已存在" + vol.Name)
+	}
 }

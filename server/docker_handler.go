@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sync"
 
 	"github.com/VanVodkaer/CS2Panel/config"
@@ -178,16 +176,6 @@ func containerCreateHandler(c *gin.Context) {
 		return
 	}
 
-	// 获取当前工作目录
-	cwd, err := os.Getwd()
-	if err != nil {
-		handleErrorResponse(c, "获取当前工作目录失败", err)
-		return
-	}
-
-	// 路径绑定参数
-	csBindPath := fmt.Sprintf("%s:/home/steam/cs2-dedicated", filepath.Join(cwd, config.GlobalConfig.Docker.CSDataDir))
-
 	// 定义容器的创建配置
 	containerConfig := &container.Config{
 		Image: config.GlobalConfig.Docker.ImageName,
@@ -240,7 +228,7 @@ func containerCreateHandler(c *gin.Context) {
 			}},
 		},
 		Binds: []string{
-			csBindPath,
+			fmt.Sprintf("%s:/home/steam/cs2-dedicated", config.GlobalConfig.Docker.VolumeName),
 		},
 	}
 

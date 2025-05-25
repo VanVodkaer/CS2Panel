@@ -1,41 +1,78 @@
 import api from "../config/axiosConfig";
-function getGameConnectCommand(name) {
-  let addr, port, passwd;
-  api.get("/info/network/addr", { name }).then((res) => {
-    addr = res.data.addr;
-    console.log(res.data.addr);
-  });
-  api.get("/info/network/gameport", { name }).then((res) => {
-    port = res.data.port;
-  });
-  api.get("/info/network/gamepasswd", { name }).then((res) => {
-    passwd = res.data.passwd;
-  });
 
-  if (passwd != "") {
-    return `connect ${addr}:${port}; password ${passwd}`;
-  } else {
-    return `connect ${addr}:${port}`;
+async function getGameConnectUrl(name) {
+  try {
+    const addrRes = await api.get("/info/network/addr");
+    const portRes = await api.get("/info/network/gameport", { params: { name } });
+    const passwdRes = await api.get("/info/network/gamepasswd", { params: { name } });
+
+    const addr = addrRes.data.addr;
+    const port = portRes.data.port;
+    const passwd = passwdRes.data.passwd;
+
+    return `steam://connect/${addr}:${port}/${passwd}`;
+  } catch (error) {
+    console.error("获取连接信息失败:", error);
   }
 }
 
-function getTvConnectCommand(name) {
-  let addr, port, passwd;
-  api.get("/info/network/addr", { name }).then((res) => {
-    addr = res.data.addr;
-  });
-  api.get("/info/network/tvport", { name }).then((res) => {
-    port = res.data.port;
-  });
-  api.get("/info/network/tvpasswd", { name }).then((res) => {
-    passwd = res.data.passwd;
-  });
+async function getTvConnectUrl(name) {
+  try {
+    const addrRes = await api.get("/info/network/addr");
+    const portRes = await api.get("/info/network/tvport", { params: { name } });
+    const passwdRes = await api.get("/info/network/tvpasswd", { params: { name } });
 
-  if (passwd != "") {
-    return `connect ${addr}:${port}; password ${passwd}`;
-  } else {
-    return `connect ${addr}:${port}`;
+    const addr = addrRes.data.addr;
+    const port = portRes.data.port;
+    const passwd = passwdRes.data.passwd;
+
+    return `steam://connect/${addr}:${port}/${passwd}`;
+  } catch (error) {
+    console.error("获取连接信息失败:", error);
   }
 }
 
-export { getGameConnectCommand, getTvConnectCommand };
+async function getGameConnectCommand(name) {
+  console.log(name);
+
+  try {
+    const addrRes = await api.get("/info/network/addr");
+    const portRes = await api.get("/info/network/gameport", { params: { name } });
+    const passwdRes = await api.get("/info/network/gamepasswd", { params: { name } });
+
+    const addr = addrRes.data.addr;
+    const port = portRes.data.port;
+    const passwd = passwdRes.data.passwd;
+
+    if (passwd) {
+      return `connect ${addr}:${port}; password ${passwd}`;
+    } else {
+      return `connect ${addr}:${port}`;
+    }
+  } catch (error) {
+    console.error("获取连接信息失败:", error);
+    return "";
+  }
+}
+
+async function getTvConnectCommand(name) {
+  try {
+    const addrRes = await api.get("/info/network/addr");
+    const portRes = api.get("/info/network/tvport", { params: { name } });
+    const passwdRes = await api.get("/info/network/tvpasswd", { params: { name } });
+
+    const addr = addrRes.data.addr;
+    const port = portRes.data.port;
+    const passwd = passwdRes.data.passwd;
+
+    if (passwd != "") {
+      return `connect ${addr}:${port}; password ${passwd}`;
+    } else {
+      return `connect ${addr}:${port}`;
+    }
+  } catch (error) {
+    console.error("获取连接信息失败:", error);
+  }
+}
+
+export { getGameConnectCommand, getTvConnectCommand, getGameConnectUrl, getTvConnectUrl };

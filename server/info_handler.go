@@ -1,22 +1,22 @@
 package server
 
 import (
+	"fmt"
+
 	"github.com/VanVodkaer/CS2Panel/config"
 	"github.com/gin-gonic/gin"
 )
 
 type MapListRequest struct {
-	Class string `json:"class"` // "current" 或 "former"，不带参数时获取所有地图
+	Class string `form:"class"` // "current" 或 "former"，不带参数时获取所有地图
 }
 
 // infoMapUpdateHandler 处理获取地图列表的更新请求
 func infoMapUpdateHandler(c *gin.Context) {
 	var req MapListRequest
-	if c.Request.ContentLength != 0 {
-		if err := c.BindJSON(&req); err != nil {
-			handleErrorResponse(c, "无效的请求参数", err)
-			return
-		}
+	if err := c.BindQuery(&req); err != nil {
+		handleErrorResponse(c, "无效的请求参数", err)
+		return
 	}
 
 	if req.Class == "current" {
@@ -53,7 +53,7 @@ func infoMapUpdateHandler(c *gin.Context) {
 func infoMapListHandler(c *gin.Context) {
 	var req MapListRequest
 	if c.Request.ContentLength != 0 {
-		if err := c.BindJSON(&req); err != nil {
+		if err := c.BindQuery(&req); err != nil {
 			handleErrorResponse(c, "无效的请求参数", err)
 			return
 		}
@@ -106,68 +106,60 @@ func networkAddrHandler(c *gin.Context) {
 }
 
 type NetworkPortRequest struct {
-	Name string `json:"name" binding:"required"` // 容器名称
+	Name string `form:"name" binding:"required"` // 容器名称
 }
 
 // networkPortHandler 处理获取网络端口的请求
 func networkGamePortHandler(c *gin.Context) {
 	var req NetworkPortRequest
-	if c.Request.ContentLength != 0 {
-		if err := c.BindJSON(&req); err != nil {
-			handleErrorResponse(c, "无效的请求参数", err)
-			return
-		}
+	if err := c.ShouldBindQuery(&req); err != nil {
+		handleErrorResponse(c, "无效的请求参数", err)
+		return
 	}
 	// 获取网络端口信息
-	ports, err := GetEnvValue(FullName(req.Name), "CS2_PORT")
+	port, err := GetEnvValue(FullName(req.Name), "CS2_PORT")
 	if err != nil {
 		handleErrorResponse(c, "获取网络端口失败", err)
 		return
 	}
 
 	c.JSON(200, gin.H{
-		"ports": ports,
+		"port": port,
 	})
 }
 
 // networkTVPortHandler 处理获取网络端口的请求
 func networkTVPortHandler(c *gin.Context) {
 	var req NetworkPortRequest
-	if c.Request.ContentLength != 0 {
-		if err := c.BindJSON(&req); err != nil {
-			handleErrorResponse(c, "无效的请求参数", err)
-			return
-		}
+	if err := c.ShouldBindQuery(&req); err != nil {
+		handleErrorResponse(c, "无效的请求参数", err)
+		return
 	}
 	// 获取网络端口信息
-	ports, err := GetEnvValue(FullName(req.Name), "TV_PORT")
+	port, err := GetEnvValue(FullName(req.Name), "TV_PORT")
 	if err != nil {
 		handleErrorResponse(c, "获取网络端口失败", err)
 		return
 	}
 
 	c.JSON(200, gin.H{
-		"ports": ports,
+		"port": port,
 	})
-}
-
-type NetworkPortsRequest struct {
-	Name []string `json:"name" binding:"required"` // 容器名称
 }
 
 // networkGamePortsHandler 处理获取网络端口的请求
 func networkGamePortsHandler(c *gin.Context) {
-	var req NetworkPortsRequest
-	if c.Request.ContentLength != 0 {
-		if err := c.BindJSON(&req); err != nil {
-			handleErrorResponse(c, "无效的请求参数", err)
-			return
-		}
+	// 使用 QueryArray 获取 name 参数列表
+	names := c.QueryArray("name")
+	if len(names) == 0 {
+		handleErrorResponse(c, "无效的请求参数", fmt.Errorf("缺少 name 参数"))
+		return
 	}
+
 	// 获取网络端口信息
 	var allPorts []string
-	for _, name := range req.Name {
-		ports, err := GetEnvValue(FullName(name), "CS2_GAME_PORTS")
+	for _, name := range names {
+		ports, err := GetEnvValue(FullName(name), "CS2_PORT")
 		if err != nil {
 			handleErrorResponse(c, "获取网络端口失败", err)
 			return
@@ -182,17 +174,15 @@ func networkGamePortsHandler(c *gin.Context) {
 
 // networkTVPortsHandler 处理获取网络端口的请求
 func networkTVPortsHandler(c *gin.Context) {
-	var req NetworkPortsRequest
-	if c.Request.ContentLength != 0 {
-		if err := c.BindJSON(&req); err != nil {
-			handleErrorResponse(c, "无效的请求参数", err)
-			return
-		}
+	names := c.QueryArray("name")
+	if len(names) == 0 {
+		handleErrorResponse(c, "无效的请求参数", fmt.Errorf("缺少 name 参数"))
+		return
 	}
 	// 获取TV端口信息
 	var allPorts []string
-	for _, name := range req.Name {
-		ports, err := GetEnvValue(FullName(name), "TV_PORTS")
+	for _, name := range names {
+		ports, err := GetEnvValue(FullName(name), "TV_PORT")
 		if err != nil {
 			handleErrorResponse(c, "获取TV端口失败", err)
 			return
@@ -206,20 +196,18 @@ func networkTVPortsHandler(c *gin.Context) {
 }
 
 type NetworkPasswdRequest struct {
-	Name string `json:"name" binding:"required"` // 容器名称
+	Name string `form:"name" binding:"required"` // 容器名称
 }
 
 // networkGamePasswdHandler 处理获取游戏密码的请求
 func networkGamePasswdHandler(c *gin.Context) {
 	var req NetworkPasswdRequest
-	if c.Request.ContentLength != 0 {
-		if err := c.BindJSON(&req); err != nil {
-			handleErrorResponse(c, "无效的请求参数", err)
-			return
-		}
+	if err := c.ShouldBindQuery(&req); err != nil {
+		handleErrorResponse(c, "无效的请求参数", err)
+		return
 	}
 	// 获取游戏密码
-	passwd, err := GetEnvValue(FullName(req.Name), "CS2_GAME_PASSWD")
+	passwd, err := GetEnvValue(FullName(req.Name), "CS2_PW")
 	if err != nil {
 		handleErrorResponse(c, "获取游戏密码失败", err)
 		return
@@ -234,13 +222,13 @@ func networkGamePasswdHandler(c *gin.Context) {
 func networkTVPasswdHandler(c *gin.Context) {
 	var req NetworkPasswdRequest
 	if c.Request.ContentLength != 0 {
-		if err := c.BindJSON(&req); err != nil {
+		if err := c.ShouldBindQuery(&req); err != nil {
 			handleErrorResponse(c, "无效的请求参数", err)
 			return
 		}
 	}
 	// 获取TV密码
-	passwd, err := GetEnvValue(FullName(req.Name), "CS2_TV_PASSWD")
+	passwd, err := GetEnvValue(FullName(req.Name), "CS2_TV_PW")
 	if err != nil {
 		handleErrorResponse(c, "获取TV密码失败", err)
 		return
@@ -251,23 +239,18 @@ func networkTVPasswdHandler(c *gin.Context) {
 	})
 }
 
-type NetworkPasswdsRequest struct {
-	Name []string `json:"name" binding:"required"` // 容器名称
-}
-
 // networkGamePasswdsHandler 处理获取游戏密码的请求
 func networkGamePasswdsHandler(c *gin.Context) {
-	var req NetworkPasswdsRequest
-	if c.Request.ContentLength != 0 {
-		if err := c.BindJSON(&req); err != nil {
-			handleErrorResponse(c, "无效的请求参数", err)
-			return
-		}
+
+	names := c.QueryArray("name")
+	if len(names) == 0 {
+		handleErrorResponse(c, "无效的请求参数", fmt.Errorf("缺少 name 参数"))
+		return
 	}
 	// 获取游戏密码
 	var allPasswds []string
-	for _, name := range req.Name {
-		passwd, err := GetEnvValue(FullName(name), "CS2_GAME_PASSWDS")
+	for _, name := range names {
+		passwd, err := GetEnvValue(FullName(name), "CS2_PW")
 		if err != nil {
 			handleErrorResponse(c, "获取游戏密码失败", err)
 			return
@@ -282,17 +265,16 @@ func networkGamePasswdsHandler(c *gin.Context) {
 
 // networkTVPasswdsHandler 处理获取TV密码的请求
 func networkTVPasswdsHandler(c *gin.Context) {
-	var req NetworkPasswdsRequest
-	if c.Request.ContentLength != 0 {
-		if err := c.BindJSON(&req); err != nil {
-			handleErrorResponse(c, "无效的请求参数", err)
-			return
-		}
+
+	names := c.QueryArray("name")
+	if len(names) == 0 {
+		handleErrorResponse(c, "无效的请求参数", fmt.Errorf("缺少 name 参数"))
+		return
 	}
 	// 获取TV密码
 	var allPasswds []string
-	for _, name := range req.Name {
-		passwd, err := GetEnvValue(FullName(name), "CS2_TV_PASSWDS")
+	for _, name := range names {
+		passwd, err := GetEnvValue(FullName(name), "CS2_TV_PW")
 		if err != nil {
 			handleErrorResponse(c, "获取TV密码失败", err)
 			return

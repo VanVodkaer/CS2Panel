@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { Row, Col, Typography, Space, Button, Table, Popconfirm, message, Checkbox } from "antd";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axiosConfig";
-import { getTvConnectCommand, getGameConnectCommand } from "../../util/connectServer";
+import {
+  getTvConnectCommand,
+  getGameConnectCommand,
+  getGameConnectUrl,
+  getTvConnectUrl,
+} from "../../util/connectServer";
 import "./index.less";
 
 const Home = () => {
@@ -92,36 +97,30 @@ const Home = () => {
   };
 
   const handleConnection = (name) => {
-    let cmd = getGameConnectCommand(name);
-
-    // 使用 encodeURIComponent 对命令进行转码，确保空格和特殊字符能够正确传递
-    let encodedCmd = encodeURIComponent(cmd);
-    let steamLink = `steam://run/730//${encodedCmd}`;
-    window.location.href = steamLink;
+    getGameConnectUrl(name).then((cmd) => {
+      window.open(cmd, "_blank");
+    });
   };
 
   const handleCopyConnection = (name) => {
-    let cmd = getGameConnectCommand(name);
-
-    navigator.clipboard.writeText(cmd).then(() => {
-      message.success("复制成功");
+    getGameConnectCommand(name).then((cmd) => {
+      navigator.clipboard.writeText(cmd).then(() => {
+        message.success("复制成功");
+      });
     });
   };
 
   const handleSpectate = (name) => {
-    let cmd = getTvConnectCommand(name);
-
-    // 使用 encodeURIComponent 对命令进行转码，确保空格和特殊字符能够正确传递
-    let encodedCmd = encodeURIComponent(cmd);
-    let steamLink = `steam://run/730//${encodedCmd}`;
-    window.location.href = steamLink;
+    getTvConnectUrl(name).then((cmd) => {
+      window.open(cmd, "_blank");
+    });
   };
 
   const handleCopySpectate = (name) => {
-    let cmd = getTvConnectCommand(name);
-
-    navigator.clipboard.writeText(cmd).then(() => {
-      message.success("复制成功");
+    getTvConnectCommand(name).then((cmd) => {
+      navigator.clipboard.writeText(cmd).then(() => {
+        message.success("复制成功");
+      });
     });
   };
 
@@ -212,7 +211,14 @@ const Home = () => {
       </Col>
       <Col>
         <Space size="middle">
-          <Button type="primary" onClick={() => navigate("/container/create")}>
+          <Button
+            type="primary"
+            onClick={() => {
+              // 先更新地图信息
+              api.post("/info/map/update").then(() => {
+                navigate("/container/create");
+              });
+            }}>
             创建新容器
           </Button>
           {selectedRowKeys.length > 0 && (
