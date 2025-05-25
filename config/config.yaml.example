@@ -13,7 +13,7 @@ docker:
   volume_name: "cs2panel" # 卷名称
   prefix: "cs2panel" # 镜像前缀
   max_retries: 3 # 重连重试次数
-  retry_delay: 1 # 重连重试间隔
+  retry_delay: 10 # 重连重试间隔
   cs_data_dir: "/cs2-data"
 
 util:

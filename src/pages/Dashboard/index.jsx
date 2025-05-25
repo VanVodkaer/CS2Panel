@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Row, Col, Typography, Space, Button, Table, Popconfirm, message, Checkbox } from "antd";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axiosConfig";
+import { getTvConnectCommand, getGameConnectCommand } from "../../util/connectServer";
 import "./index.less";
 
 const Home = () => {
@@ -90,14 +91,38 @@ const Home = () => {
     console.log("批量删除容器:", selectedRowKeys);
   };
 
+  const handleConnection = (name) => {
+    let cmd = getGameConnectCommand(name);
+
+    // 使用 encodeURIComponent 对命令进行转码，确保空格和特殊字符能够正确传递
+    let encodedCmd = encodeURIComponent(cmd);
+    let steamLink = `steam://run/730//${encodedCmd}`;
+    window.location.href = steamLink;
+  };
+
   const handleCopyConnection = (name) => {
-    // TODO: 实现复制连接信息逻辑
-    console.log("复制连接信息:", name);
+    let cmd = getGameConnectCommand(name);
+
+    navigator.clipboard.writeText(cmd).then(() => {
+      message.success("复制成功");
+    });
+  };
+
+  const handleSpectate = (name) => {
+    let cmd = getTvConnectCommand(name);
+
+    // 使用 encodeURIComponent 对命令进行转码，确保空格和特殊字符能够正确传递
+    let encodedCmd = encodeURIComponent(cmd);
+    let steamLink = `steam://run/730//${encodedCmd}`;
+    window.location.href = steamLink;
   };
 
   const handleCopySpectate = (name) => {
-    // TODO: 实现复制观战信息逻辑
-    console.log("复制观战信息:", name);
+    let cmd = getTvConnectCommand(name);
+
+    navigator.clipboard.writeText(cmd).then(() => {
+      message.success("复制成功");
+    });
   };
 
   const columns = [
@@ -155,13 +180,23 @@ const Home = () => {
         const full = record.Names[0];
         const trimmed = full.includes("-") ? full.substring(full.indexOf("-") + 1) : full;
         return (
-          <Space size="small">
-            <Button size="small" onClick={() => handleCopyConnection(trimmed)}>
-              连接信息
-            </Button>
-            <Button size="small" onClick={() => handleCopySpectate(trimmed)}>
-              观战信息
-            </Button>
+          <Space direction="vertical" size="small">
+            <Space size="small">
+              <Button size="small" onClick={() => handleConnection(trimmed)}>
+                连接服务器
+              </Button>
+              <Button size="small" onClick={() => handleCopyConnection(trimmed)}>
+                复制连接指令
+              </Button>
+            </Space>
+            <Space size="small">
+              <Button size="small" onClick={() => handleSpectate(trimmed)}>
+                观战服务器
+              </Button>
+              <Button size="small" onClick={() => handleCopySpectate(trimmed)}>
+                复制观战指令
+              </Button>
+            </Space>
           </Space>
         );
       },
