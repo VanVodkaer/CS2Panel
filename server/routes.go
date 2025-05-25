@@ -11,23 +11,22 @@ func ServerSetRouter(router *gin.Engine) {
 	{
 		dockerGroup := apiGroup.Group("/docker")
 		{
-			dockerGroup.Any("/ping", pingHandler)
+			dockerGroup.Any("/ping", dockerPingHandler)
 
 			imageGroup := dockerGroup.Group("/image")
 			{
-				imageGroup.POST("/pull", imagePullHandler)
-				imageGroup.GET("/pull/status", imagePullStatusHandler)
+				imageGroup.POST("/pull", dockerImagePullHandler)
+				imageGroup.GET("/pull/status", dockerImagePullStatusHandler)
 			}
 
 			containerGroup := dockerGroup.Group("/container")
 			{
-				containerGroup.GET("/list", containerListHandler)
-				containerGroup.POST("/create", containerCreateHandler)
-				containerGroup.POST("/start", containerStartHandler)
-				containerGroup.POST("/stop", containerStopHandler)
-				containerGroup.POST("/restart", containerRestartHandler)
-				containerGroup.DELETE("/remove", containerRemoveHandler)
-				containerGroup.POST("/exec", containerExecHandler)
+				containerGroup.GET("/list", dockerContainerListHandler)
+				containerGroup.POST("/create", dockerContainerCreateHandler)
+				containerGroup.POST("/start", dockerContainerStartHandler)
+				containerGroup.POST("/stop", dockerContainerStopHandler)
+				containerGroup.POST("/restart", dockerContainerRestartHandler)
+				containerGroup.DELETE("/remove", dockerContainerRemoveHandler)
 			}
 
 		}
@@ -42,15 +41,51 @@ func ServerSetRouter(router *gin.Engine) {
 
 			networkGroup := infoGroup.Group("/network")
 			{
-				networkGroup.GET("/addr", networkAddrHandler)
-				networkGroup.GET("/gameport", networkGamePortHandler)
-				networkGroup.GET("/gameports", networkGamePortsHandler)
-				networkGroup.GET("/tvport", networkTVPortHandler)
-				networkGroup.GET("/tvports", networkTVPortsHandler)
-				networkGroup.GET("/gamepasswd", networkGamePasswdHandler)
-				networkGroup.GET("/gamepasswds", networkGamePasswdsHandler)
-				networkGroup.GET("/tvpasswd", networkTVPasswdHandler)
-				networkGroup.GET("/tvpasswds", networkTVPasswdsHandler)
+				networkGroup.GET("/addr", infoNetworkAddrHandler)
+				networkGroup.GET("/gameport", infoNetworkGamePortHandler)
+				networkGroup.GET("/gameports", infoNetworkGamePortsHandler)
+				networkGroup.GET("/tvport", infoNetworkTVPortHandler)
+				networkGroup.GET("/tvports", infoNetworkTVPortsHandler)
+				networkGroup.GET("/gamepasswd", infoNetworkGamePasswdHandler)
+				networkGroup.GET("/gamepasswds", infoNetworkGamePasswdsHandler)
+				networkGroup.GET("/tvpasswd", infoNetworkTVPasswdHandler)
+				networkGroup.GET("/tvpasswds", infoNetworkTVPasswdsHandler)
+			}
+		}
+		rconGroup := apiGroup.Group("/rcon")
+		{
+			rconGroup.POST("/exec", rconExecHandler)
+			gameGroup := rconGroup.Group("/game")
+			{
+				gameGroup.GET("/status", rconGameStatusHandler)
+				gameGroup.POST("/restart", rconGameRestartHandler)
+				warmGroup := gameGroup.Group("/warm")
+				{
+					warmGroup.POST("/start", rconGameWarmStartHandler)
+					warmGroup.POST("/end", rconGameWarmEndHandler)
+					warmGroup.POST("/offine", rconGameWarmOffineHandler)
+					warmGroup.POST("/time", rconGameWarmTimeHandler)
+					warmGroup.POST("/pause", rconGameWarmPauseHandler)
+				}
+				configGroup := rconGroup.Group("/config")
+				{
+					configGroup.POST("/maxrounds", rconGameConfigMaxRoundsHandler)
+					configGroup.POST("/timelimit", rconGameConfigTimeLimitHandler)
+					configGroup.POST("/roundtime", rconGameConfigRoundTimeHandler)
+					configGroup.POST("/freezetime", rconGameConfigFreezetimeHandler)
+					configGroup.POST("/buytime", rconGameConfigBuytimeHandler)
+					configGroup.POST("/buy_anywhere", rconGameConfigBuyAnywhereHandler)
+					configGroup.POST("/startmoney", rconGameConfigStartMoneyHandler)
+					configGroup.POST("/maxmoney", rconGameConfigMaxMoneyHandler)
+					configGroup.POST("/autoteambalance", rconGameConfigAutoTeamBalanceHandler)
+					configGroup.POST("/limitteams", rconGameConfigLimitTeamsHandler)
+					configGroup.POST("/c4timer", rconGameConfigC4TimerHandler)
+				}
+			}
+			mapGroup := rconGroup.Group("/map")
+			{
+				mapGroup.GET("/now", rconMapNowHandler)
+				mapGroup.POST("/change", rconMapChangeHandler)
 			}
 		}
 

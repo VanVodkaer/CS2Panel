@@ -7,12 +7,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type MapListRequest struct {
-	Class string `form:"class"` // "current" 或 "former"，不带参数时获取所有地图
-}
-
 // infoMapUpdateHandler 处理获取地图列表的更新请求
 func infoMapUpdateHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type MapListRequest struct {
+		Class string `form:"class"` // "current" 或 "former"，不带参数时获取所有地图
+	}
+
 	var req MapListRequest
 	if err := c.BindQuery(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
@@ -51,6 +52,11 @@ func infoMapUpdateHandler(c *gin.Context) {
 
 // infoMapListHandler 处理获取地图列表的请求
 func infoMapListHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type MapListRequest struct {
+		Class string `form:"class"`
+	}
+
 	var req MapListRequest
 	if c.Request.ContentLength != 0 {
 		if err := c.BindQuery(&req); err != nil {
@@ -95,22 +101,22 @@ func infoMapListHandler(c *gin.Context) {
 			"maps": allMaps,
 		})
 	}
-
 }
 
-// networkAddrHandler 处理获取网络地址的请求
-func networkAddrHandler(c *gin.Context) {
+// infoNetworkAddrHandler 处理获取网络地址的请求
+func infoNetworkAddrHandler(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"addr": config.GlobalConfig.Game.Address,
 	})
 }
 
-type NetworkPortRequest struct {
-	Name string `form:"name" binding:"required"` // 容器名称
-}
+// infoNetworkGamePortHandler 处理获取网络端口的请求
+func infoNetworkGamePortHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type NetworkPortRequest struct {
+		Name string `form:"name" binding:"required"` // 容器名称
+	}
 
-// networkPortHandler 处理获取网络端口的请求
-func networkGamePortHandler(c *gin.Context) {
 	var req NetworkPortRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
@@ -128,8 +134,13 @@ func networkGamePortHandler(c *gin.Context) {
 	})
 }
 
-// networkTVPortHandler 处理获取网络端口的请求
-func networkTVPortHandler(c *gin.Context) {
+// infoNetworkTVPortHandler 处理获取网络端口的请求
+func infoNetworkTVPortHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type NetworkPortRequest struct {
+		Name string `form:"name" binding:"required"` // 容器名称
+	}
+
 	var req NetworkPortRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
@@ -147,8 +158,8 @@ func networkTVPortHandler(c *gin.Context) {
 	})
 }
 
-// networkGamePortsHandler 处理获取网络端口的请求
-func networkGamePortsHandler(c *gin.Context) {
+// infoNetworkGamePortsHandler 处理获取网络端口的请求
+func infoNetworkGamePortsHandler(c *gin.Context) {
 	// 使用 QueryArray 获取 name 参数列表
 	names := c.QueryArray("name")
 	if len(names) == 0 {
@@ -172,13 +183,15 @@ func networkGamePortsHandler(c *gin.Context) {
 	})
 }
 
-// networkTVPortsHandler 处理获取网络端口的请求
-func networkTVPortsHandler(c *gin.Context) {
+// infoNetworkTVPortsHandler 处理获取网络端口的请求
+func infoNetworkTVPortsHandler(c *gin.Context) {
+	// 使用 QueryArray 获取 name 参数列表
 	names := c.QueryArray("name")
 	if len(names) == 0 {
 		handleErrorResponse(c, "无效的请求参数", fmt.Errorf("缺少 name 参数"))
 		return
 	}
+
 	// 获取TV端口信息
 	var allPorts []string
 	for _, name := range names {
@@ -195,12 +208,13 @@ func networkTVPortsHandler(c *gin.Context) {
 	})
 }
 
-type NetworkPasswdRequest struct {
-	Name string `form:"name" binding:"required"` // 容器名称
-}
+// infoNetworkGamePasswdHandler 处理获取游戏密码的请求
+func infoNetworkGamePasswdHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type NetworkPasswdRequest struct {
+		Name string `form:"name" binding:"required"` // 容器名称
+	}
 
-// networkGamePasswdHandler 处理获取游戏密码的请求
-func networkGamePasswdHandler(c *gin.Context) {
 	var req NetworkPasswdRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
@@ -218,8 +232,13 @@ func networkGamePasswdHandler(c *gin.Context) {
 	})
 }
 
-// networkTVPasswdHandler 处理获取TV密码的请求
-func networkTVPasswdHandler(c *gin.Context) {
+// infoNetworkTVPasswdHandler 处理获取TV密码的请求
+func infoNetworkTVPasswdHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type NetworkPasswdRequest struct {
+		Name string `form:"name" binding:"required"` // 容器名称
+	}
+
 	var req NetworkPasswdRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
@@ -237,9 +256,9 @@ func networkTVPasswdHandler(c *gin.Context) {
 	})
 }
 
-// networkGamePasswdsHandler 处理获取游戏密码的请求
-func networkGamePasswdsHandler(c *gin.Context) {
-
+// infoNetworkGamePasswdsHandler 处理获取游戏密码的请求
+func infoNetworkGamePasswdsHandler(c *gin.Context) {
+	// 获取 name 参数列表
 	names := c.QueryArray("name")
 	if len(names) == 0 {
 		handleErrorResponse(c, "无效的请求参数", fmt.Errorf("缺少 name 参数"))
@@ -261,9 +280,9 @@ func networkGamePasswdsHandler(c *gin.Context) {
 	})
 }
 
-// networkTVPasswdsHandler 处理获取TV密码的请求
-func networkTVPasswdsHandler(c *gin.Context) {
-
+// infoNetworkTVPasswdsHandler 处理获取TV密码的请求
+func infoNetworkTVPasswdsHandler(c *gin.Context) {
+	// 获取 name 参数列表
 	names := c.QueryArray("name")
 	if len(names) == 0 {
 		handleErrorResponse(c, "无效的请求参数", fmt.Errorf("缺少 name 参数"))
@@ -279,6 +298,7 @@ func networkTVPasswdsHandler(c *gin.Context) {
 		}
 		allPasswds = append(allPasswds, passwd)
 	}
+
 	c.JSON(200, gin.H{
 		"passwds": allPasswds,
 	})

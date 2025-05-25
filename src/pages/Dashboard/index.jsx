@@ -165,7 +165,7 @@ const Home = () => {
                 {deletingName === trimmed ? "删除中..." : "删除"}
               </Button>
             </Popconfirm>
-            <Button type="link" size="small" onClick={() => navigate(`/container/${trimmed}`)}>
+            <Button type="link" size="small" onClick={() => navigate(`/container/detail/${trimmed}`)}>
               详情
             </Button>
           </Space>

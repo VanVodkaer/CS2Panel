@@ -17,8 +17,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// pingHandler 处理 Docker 服务的 ping 请求
-func pingHandler(c *gin.Context) {
+// dockerPingHandler 处理 Docker 服务的 ping 请求
+func dockerPingHandler(c *gin.Context) {
 	ping, err := docker.Cli.Ping(context.Background())
 	if err != nil {
 		handleErrorResponse(c, "Docker 服务连接失败", err)
@@ -33,9 +33,9 @@ func pingHandler(c *gin.Context) {
 	util.Info(fmt.Sprintf("Docker 服务正在运行, Ping 信息: %+v", ping))
 }
 
-// imagePullHandler 异步处理拉取 Docker 镜像的请求
+// dockerImagePullHandler 异步处理拉取 Docker 镜像的请求
 var pullStatus sync.Map // key: imageName, value: status(string)
-func imagePullHandler(c *gin.Context) {
+func dockerImagePullHandler(c *gin.Context) {
 	imageName := config.GlobalConfig.Docker.ImageName
 	_, loaded := pullStatus.LoadOrStore(imageName, "pulling")
 	if loaded {
@@ -76,8 +76,8 @@ func imagePullHandler(c *gin.Context) {
 	})
 }
 
-// imagePullStatusHandler 处理获取 Docker 镜像拉取状态的请求
-func imagePullStatusHandler(c *gin.Context) {
+// dockerImagePullStatusHandler 处理获取 Docker 镜像拉取状态的请求
+func dockerImagePullStatusHandler(c *gin.Context) {
 	imageName := config.GlobalConfig.Docker.ImageName
 	if status, ok := pullStatus.Load(imageName); ok {
 		c.JSON(http.StatusOK, gin.H{
@@ -90,8 +90,8 @@ func imagePullStatusHandler(c *gin.Context) {
 	}
 }
 
-// containerListHandler 处理获取 Docker 容器列表的请求
-func containerListHandler(c *gin.Context) {
+// dockerContainerListHandler 处理获取 Docker 容器列表的请求
+func dockerContainerListHandler(c *gin.Context) {
 	// 过滤器按容器名称前缀过滤
 	containers, err := docker.Cli.ContainerList(context.Background(), container.ListOptions{
 		All:     true,
@@ -115,60 +115,60 @@ func containerListHandler(c *gin.Context) {
 	util.Info("获取 Docker 容器列表成功")
 }
 
-// DockerCreateRequest 定义创建 Docker 容器的请求参数
-type ContainerCreateRequest struct {
-	// 容器名称 (必填)
-	Name string `json:"name" binding:"required"`
+// dockerContainerCreateHandler 处理创建 Docker 容器的请求
+func dockerContainerCreateHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type ContainerCreateRequest struct {
+		// 容器名称 (必填)
+		Name string `json:"name" binding:"required"`
 
-	// 容器创建时确定的参数
-	// 用于游戏服务器和Rcon的端口 (可选，默认值为 "27015")
-	CS2_PORT string `json:"cs2_port"` // 游戏服务器端口，默认值 "27015"
-	// 用于Rcon的端口 (可选，默认值为 "27015")
-	CS2_RCON_PORT string `json:"cs2_rcon_port"` // RCON 端口，默认值 "27015"
-	// 用于观战服务器状态的端口 (可选，默认值为 "27020")
-	TV_PORT string `json:"tv_port"` // SourceTV 端口，默认值 "27020"
-	// 是否为局域网模式 (可选，默认值为 "0"，"0"为局域网模式，"1"为非局域网模式)
-	CS2_LAN string `json:"cs2_lan"` // 局域网模式，默认值 "0"
-	// 最大玩家数 (可选)
-	CS2_MAXPLAYERS string `json:"cs2_maxplayers"` // 最大玩家数
-	// 游戏开始地图 (可选)
-	CS2_STARTMAP string `json:"cs2_startmap"` // 启动地图，例如 "de_inferno"
-	// 地图组 (可选)
-	CS2_MAPGROUP string `json:"cs2_mapgroup"` // 地图组名称，例如 "mg_active"
+		// 容器创建时确定的参数
+		// 用于游戏服务器和Rcon的端口 (可选，默认值为 "27015")
+		CS2_PORT string `json:"cs2_port"` // 游戏服务器端口，默认值 "27015"
+		// 用于Rcon的端口 (可选，默认值为 "27015")
+		CS2_RCON_PORT string `json:"cs2_rcon_port"` // RCON 端口，默认值 "27015"
+		// 用于观战服务器状态的端口 (可选，默认值为 "27020")
+		TV_PORT string `json:"tv_port"` // SourceTV 端口，默认值 "27020"
+		// 是否为局域网模式 (可选，默认值为 "0"，"0"为局域网模式，"1"为非局域网模式)
+		CS2_LAN string `json:"cs2_lan"` // 局域网模式，默认值 "0"
+		// 最大玩家数 (可选)
+		CS2_MAXPLAYERS string `json:"cs2_maxplayers"` // 最大玩家数
+		// 游戏开始地图 (可选)
+		CS2_STARTMAP string `json:"cs2_startmap"` // 启动地图，例如 "de_inferno"
+		// 地图组 (可选)
+		CS2_MAPGROUP string `json:"cs2_mapgroup"` // 地图组名称，例如 "mg_active"
 
-	// 容器运行时的参数（这些可以通过控制台或 RCON 动态修改）
-	// 服务器名称
-	CS2_SERVERNAME string `json:"cs2_servername"` // 服务器名称
-	// RCON 密码
-	CS2_RCONPW string `json:"cs2_rconpw"` // RCON 密码
-	// 连接密码
-	CS2_PW string `json:"cs2_pw"` // 服务器连接密码
-	// 是否允许作弊 (可选，默认值为 "0"，"0" 禁止作弊，"1" 允许作弊)
-	CS2_CHEATS string `json:"cs2_cheats"` // 作弊模式，默认值 "0"
-	// 是否启用 SourceTV (可选，默认值为 "0"，"0" 禁用，"1" 启用)
-	CS2_TV_ENABLE string `json:"cs2_tv_enable"` // 启用 SourceTV，默认值 "0"
-	// SourceTV 密码
-	CS2_TV_PW string `json:"cs2_tv_pw"` // SourceTV 观看密码
-	// SourceTV 延迟 (可选)
-	CS2_TV_DELAY string `json:"cs2_tv_delay"` // SourceTV 延迟，单位为秒
-	// 自动录制 SourceTV (可选，默认值为 "0"，"0" 禁用，"1" 启用)
-	CS2_TV_AUTORECORD string `json:"cs2_tv_autorecord"` // 启用 SourceTV 自动录制，默认值 "0"
-	// 机器人数量 (可选，默认值为 "0")
-	CS2_BOT_QUOTA string `json:"cs2_bot_quota"` // 机器人数量
-	// 机器人难度 (可选，默认值为 "1"，"0" 最容易，"3" 最难)
-	CS2_BOT_DIFFICULTY string `json:"cs2_bot_difficulty"` // 机器人难度，默认值 "1"
-	// 是否开启比赛模式 (可选，默认值为 "0" 启用，"1" 禁用)
-	CS2_COMPETITIVE_MODE string `json:"cs2_competitive_mode"` // 比赛模式，默认值 "0"
-	// 日志记录是否启用 (可选，默认值为 "1"，"1" 启用，"0" 禁用)
-	CS2_LOGGING_ENABLED string `json:"cs2_logging_enabled"` // 日志记录启用，默认值 "1"
-	// 游戏模式 (可选，默认值为 "0"，"0" 为休闲模式，"1" 为竞技模式)
-	CS2_GAMEMODE string `json:"cs2_gamemode"` // 游戏模式，默认值 "0"
-	// 游戏类型 (可选，默认值为 "0"，"0" 为普通游戏，"1" 为死亡竞赛)
-	CS2_GAMETYPE string `json:"cs2_gametype"` // 游戏类型，默认值 "0"
-}
+		// 容器运行时的参数（这些可以通过控制台或 RCON 动态修改）
+		// 服务器名称
+		CS2_SERVERNAME string `json:"cs2_servername"` // 服务器名称
+		// RCON 密码
+		CS2_RCONPW string `json:"cs2_rconpw"` // RCON 密码
+		// 连接密码
+		CS2_PW string `json:"cs2_pw"` // 服务器连接密码
+		// 是否允许作弊 (可选，默认值为 "0"，"0" 禁止作弊，"1" 允许作弊)
+		CS2_CHEATS string `json:"cs2_cheats"` // 作弊模式，默认值 "0"
+		// 是否启用 SourceTV (可选，默认值为 "0"，"0" 禁用，"1" 启用)
+		CS2_TV_ENABLE string `json:"cs2_tv_enable"` // 启用 SourceTV，默认值 "0"
+		// SourceTV 密码
+		CS2_TV_PW string `json:"cs2_tv_pw"` // SourceTV 观看密码
+		// SourceTV 延迟 (可选)
+		CS2_TV_DELAY string `json:"cs2_tv_delay"` // SourceTV 延迟，单位为秒
+		// 自动录制 SourceTV (可选，默认值为 "0"，"0" 禁用，"1" 启用)
+		CS2_TV_AUTORECORD string `json:"cs2_tv_autorecord"` // 启用 SourceTV 自动录制，默认值 "0"
+		// 机器人数量 (可选，默认值为 "0")
+		CS2_BOT_QUOTA string `json:"cs2_bot_quota"` // 机器人数量
+		// 机器人难度 (可选，默认值为 "1"，"0" 最容易，"3" 最难)
+		CS2_BOT_DIFFICULTY string `json:"cs2_bot_difficulty"` // 机器人难度，默认值 "1"
+		// 是否开启比赛模式 (可选，默认值为 "0" 启用，"1" 禁用)
+		CS2_COMPETITIVE_MODE string `json:"cs2_competitive_mode"` // 比赛模式，默认值 "0"
+		// 日志记录是否启用 (可选，默认值为 "1"，"1" 启用，"0" 禁用)
+		CS2_LOGGING_ENABLED string `json:"cs2_logging_enabled"` // 日志记录启用，默认值 "1"
+		// 游戏模式 (可选，默认值为 "0"，"0" 为休闲模式，"1" 为竞技模式)
+		CS2_GAMEMODE string `json:"cs2_gamemode"` // 游戏模式，默认值 "0"
+		// 游戏类型 (可选，默认值为 "0"，"0" 为普通游戏，"1" 为死亡竞赛)
+		CS2_GAMETYPE string `json:"cs2_gametype"` // 游戏类型，默认值 "0"
+	}
 
-// containerCreateHandler 处理创建 Docker 容器的请求
-func containerCreateHandler(c *gin.Context) {
 	// 从请求中解析参数
 	var req ContainerCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -180,38 +180,22 @@ func containerCreateHandler(c *gin.Context) {
 	containerConfig := &container.Config{
 		Image: config.GlobalConfig.Docker.ImageName,
 		ExposedPorts: nat.PortSet{
-			nat.Port(fmt.Sprintf("%s/tcp", util.DefaultIfEmpty(req.CS2_RCON_PORT, "27015"))): {}, // RCON 端口
-			nat.Port(fmt.Sprintf("%s/udp", util.DefaultIfEmpty(req.CS2_PORT, "27015"))):      {}, // 游戏服务器端口
-			nat.Port(fmt.Sprintf("%s/udp", util.DefaultIfEmpty(req.TV_PORT, "27020"))):       {}, // SourceTV 端口
+			nat.Port(fmt.Sprintf("%s/tcp", util.DefaultIfEmpty(req.CS2_RCON_PORT, "27015"))): {},
+			nat.Port(fmt.Sprintf("%s/udp", util.DefaultIfEmpty(req.CS2_PORT, "27015"))):      {},
+			nat.Port(fmt.Sprintf("%s/udp", util.DefaultIfEmpty(req.TV_PORT, "27020"))):       {},
 		},
 		Env: []string{
 			// 固定环境变量
 			fmt.Sprintf("SRCDS_TOKEN=%s", config.GlobalConfig.Game.SRCDS_TOKEN),
-
 			// 端口信息
 			fmt.Sprintf("CS2_PORT=%s", util.DefaultIfEmpty(req.CS2_PORT, "27015")),
 			fmt.Sprintf("CS2_RCON_PORT=%s", util.DefaultIfEmpty(req.CS2_RCON_PORT, "27015")),
 			fmt.Sprintf("TV_PORT=%s", util.DefaultIfEmpty(req.TV_PORT, "27020")),
-
 			// 其它环境变量
 			fmt.Sprintf("CS2_SERVERNAME=%s", util.DefaultIfEmpty(req.CS2_SERVERNAME, "Van_Vodkaer's CS2 Server")),
 			fmt.Sprintf("CS2_PW=%s", util.DefaultIfEmpty(req.CS2_PW, "")),
 			fmt.Sprintf("CS2_RCONPW=%s", util.DefaultIfEmpty(req.CS2_RCONPW, config.GlobalConfig.Game.RCON_PASSWORD)),
-			fmt.Sprintf("CS2_CHEATS=%s", util.DefaultIfEmpty(req.CS2_CHEATS, "0")),
-			fmt.Sprintf("CS2_TV_ENABLE=%s", util.DefaultIfEmpty(req.CS2_TV_ENABLE, "0")),
-			fmt.Sprintf("CS2_TV_PW=%s", util.DefaultIfEmpty(req.CS2_TV_PW, "")),
-			fmt.Sprintf("CS2_TV_DELAY=%s", util.DefaultIfEmpty(req.CS2_TV_DELAY, "0")),
-			fmt.Sprintf("CS2_TV_AUTORECORD=%s", util.DefaultIfEmpty(req.CS2_TV_AUTORECORD, "0")),
-			fmt.Sprintf("CS2_BOT_QUOTA=%s", util.DefaultIfEmpty(req.CS2_BOT_QUOTA, "0")),
-			fmt.Sprintf("CS2_BOT_DIFFICULTY=%s", util.DefaultIfEmpty(req.CS2_BOT_DIFFICULTY, "1")),
-			fmt.Sprintf("CS2_COMPETITIVE_MODE=%s", util.DefaultIfEmpty(req.CS2_COMPETITIVE_MODE, "0")),
-			fmt.Sprintf("CS2_LOGGING_ENABLED=%s", util.DefaultIfEmpty(req.CS2_LOGGING_ENABLED, "1")),
-			fmt.Sprintf("CS2_GAMEMODE=%s", util.DefaultIfEmpty(req.CS2_GAMEMODE, "0")),
-			fmt.Sprintf("CS2_GAMETYPE=%s", util.DefaultIfEmpty(req.CS2_GAMETYPE, "0")),
-			fmt.Sprintf("CS2_LAN=%s", util.DefaultIfEmpty(req.CS2_LAN, "0")),
-			fmt.Sprintf("CS2_MAXPLAYERS=%s", util.DefaultIfEmpty(req.CS2_MAXPLAYERS, "")),
-			fmt.Sprintf("CS2_STARTMAP=%s", util.DefaultIfEmpty(req.CS2_STARTMAP, "")),
-			fmt.Sprintf("CS2_MAPGROUP=%s", util.DefaultIfEmpty(req.CS2_MAPGROUP, "")),
+			// 其他环境变量的定义
 		},
 	}
 
@@ -248,14 +232,14 @@ func containerCreateHandler(c *gin.Context) {
 	util.Info("容器创建成功 容器 ID: " + createResp.ID)
 }
 
-// ContainerStartRequest 定义启动 Docker 容器的请求参数
-type ContainerStartRequest struct {
-	Name string   `json:"name" binding:"required"`
-	Cmds []string `json:"cmds"` // 可选的命令参数
-}
+// dockerContainerStartHandler 处理启动 Docker 容器的请求
+func dockerContainerStartHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type ContainerStartRequest struct {
+		Name string   `json:"name" binding:"required"`
+		Cmds []string `json:"cmds"` // 可选的命令参数
+	}
 
-// containerStartHandler 处理启动 Docker 容器的请求
-func containerStartHandler(c *gin.Context) {
 	// 从请求中解析参数
 	var req ContainerStartRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -293,13 +277,13 @@ func containerStartHandler(c *gin.Context) {
 	util.Info("容器启动成功 容器 ID: " + req.Name)
 }
 
-// ContainerStopRequest 定义停止 Docker 容器的请求参数
-type ContainerStopRequest struct {
-	Name string `json:"name" binding:"required"`
-}
+// dockerContainerStopHandler 处理停止 Docker 容器的请求
+func dockerContainerStopHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type ContainerStopRequest struct {
+		Name string `json:"name" binding:"required"`
+	}
 
-// containerStopHandler 处理停止 Docker 容器的请求
-func containerStopHandler(c *gin.Context) {
 	// 从请求中解析参数
 	var req ContainerStopRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -320,15 +304,15 @@ func containerStopHandler(c *gin.Context) {
 	util.Info("容器停止成功 容器 ID: " + req.Name)
 }
 
-// ContainerRestartRequest 定义重启 Docker 容器的请求参数
-type ContainerRestartRequest struct {
-	Name string `json:"name" binding:"required"`
-}
+// dockerContainerRestartHandler 处理重启 Docker 容器的请求
+func dockerContainerRestartHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type ContainerRestartRequest struct {
+		Name string `json:"name" binding:"required"`
+	}
 
-// containerRestartHandler 处理重启 Docker 容器的请求
-func containerRestartHandler(c *gin.Context) {
 	// 从请求中解析参数
-	var req ContainerStartRequest
+	var req ContainerRestartRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
@@ -347,15 +331,15 @@ func containerRestartHandler(c *gin.Context) {
 	util.Info("容器重启成功 容器 ID: " + req.Name)
 }
 
-// ContainerRemoveRequest 定义删除 Docker 容器的请求参数
-type ContainerRemoveRequest struct {
-	Name string `json:"name" binding:"required"`
-}
+// dockerContainerRemoveHandler 处理删除 Docker 容器的请求
+func dockerContainerRemoveHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type ContainerRemoveRequest struct {
+		Name string `json:"name" binding:"required"`
+	}
 
-// containerRemoveHandler 处理删除 Docker 容器的请求
-func containerRemoveHandler(c *gin.Context) {
 	// 从请求中解析参数
-	var req ContainerStartRequest
+	var req ContainerRemoveRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
@@ -377,38 +361,4 @@ func containerRemoveHandler(c *gin.Context) {
 	}
 
 	util.Info("容器删除成功 容器 ID: " + req.Name)
-}
-
-// ContainerExecRequest 定义执行 Docker 容器命令的请求参数
-type ContainerExecRequest struct {
-	Name string   `json:"name" binding:"required"`
-	Cmds []string `json:"cmds" binding:"required"`
-}
-
-// containerExecHandler 处理执行 Docker 容器命令的请求
-func containerExecHandler(c *gin.Context) {
-	// 从请求中解析参数
-	var req ContainerExecRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		handleErrorResponse(c, "无效的请求参数", err)
-		return
-	}
-
-	var responses []string
-
-	for _, cmd := range req.Cmds {
-		response, err := ExecRconCommand(FullName(req.Name), cmd)
-		if err != nil {
-			handleErrorResponse(c, "执行命令失败", err)
-			return
-		} else {
-			responses = append(responses, response)
-			util.Info("执行命令成功 命令: " + cmd + " 响应: " + response)
-		}
-	}
-	// 返回执行命令的响应
-	c.JSON(200, gin.H{
-		"message":   "执行命令成功",
-		"responses": responses,
-	})
 }
