@@ -22,6 +22,8 @@ async function getTvConnectUrl(name) {
     const portRes = await api.get("/info/network/tvport", { params: { name } });
     const passwdRes = await api.get("/info/network/tvpasswd", { params: { name } });
 
+    console.log(passwdRes);
+
     const addr = addrRes.data.addr;
     const port = portRes.data.port;
     const passwd = passwdRes.data.passwd;
@@ -58,7 +60,7 @@ async function getGameConnectCommand(name) {
 async function getTvConnectCommand(name) {
   try {
     const addrRes = await api.get("/info/network/addr");
-    const portRes = api.get("/info/network/tvport", { params: { name } });
+    const portRes = await api.get("/info/network/tvport", { params: { name } });
     const passwdRes = await api.get("/info/network/tvpasswd", { params: { name } });
 
     const addr = addrRes.data.addr;

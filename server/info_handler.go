@@ -221,11 +221,9 @@ func networkGamePasswdHandler(c *gin.Context) {
 // networkTVPasswdHandler 处理获取TV密码的请求
 func networkTVPasswdHandler(c *gin.Context) {
 	var req NetworkPasswdRequest
-	if c.Request.ContentLength != 0 {
-		if err := c.ShouldBindQuery(&req); err != nil {
-			handleErrorResponse(c, "无效的请求参数", err)
-			return
-		}
+	if err := c.ShouldBindQuery(&req); err != nil {
+		handleErrorResponse(c, "无效的请求参数", err)
+		return
 	}
 	// 获取TV密码
 	passwd, err := GetEnvValue(FullName(req.Name), "CS2_TV_PW")
