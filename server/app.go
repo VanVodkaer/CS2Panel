@@ -81,6 +81,18 @@ func (app *App) ServerStart() {
 		util.Info("Web 服务与 API 服务共用同一端口")
 	}
 
+	// 启动后更新一次地图
+	if err := fetchCurrentMaps(); err != nil {
+		util.Error("地图更新失败: %v", err)
+	} else {
+		util.Info("地图更新成功")
+	}
+	if err := fetchFormerMaps(); err != nil {
+		util.Error("历史地图更新失败: %v", err)
+	} else {
+		util.Info("历史地图更新成功")
+	}
+
 	// 阻塞主线程，防止退出
 	select {}
 }

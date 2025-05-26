@@ -187,15 +187,28 @@ func dockerContainerCreateHandler(c *gin.Context) {
 		Env: []string{
 			// 固定环境变量
 			fmt.Sprintf("SRCDS_TOKEN=%s", config.GlobalConfig.Game.SRCDS_TOKEN),
-			// 端口信息
+			// 环境变量
 			fmt.Sprintf("CS2_PORT=%s", util.DefaultIfEmpty(req.CS2_PORT, "27015")),
 			fmt.Sprintf("CS2_RCON_PORT=%s", util.DefaultIfEmpty(req.CS2_RCON_PORT, "27015")),
 			fmt.Sprintf("TV_PORT=%s", util.DefaultIfEmpty(req.TV_PORT, "27020")),
-			// 其它环境变量
 			fmt.Sprintf("CS2_SERVERNAME=%s", util.DefaultIfEmpty(req.CS2_SERVERNAME, "Van_Vodkaer's CS2 Server")),
 			fmt.Sprintf("CS2_PW=%s", util.DefaultIfEmpty(req.CS2_PW, "")),
 			fmt.Sprintf("CS2_RCONPW=%s", util.DefaultIfEmpty(req.CS2_RCONPW, config.GlobalConfig.Game.RCON_PASSWORD)),
-			// 其他环境变量的定义
+			fmt.Sprintf("CS2_LAN=%s", util.DefaultIfEmpty(req.CS2_LAN, "0")),
+			fmt.Sprintf("CS2_MAXPLAYERS=%s", util.DefaultIfEmpty(req.CS2_MAXPLAYERS, "")),
+			fmt.Sprintf("CS2_STARTMAP=%s", util.DefaultIfEmpty(req.CS2_STARTMAP, "")),
+			fmt.Sprintf("CS2_MAPGROUP=%s", util.DefaultIfEmpty(req.CS2_MAPGROUP, "")),
+			fmt.Sprintf("CS2_CHEATS=%s", util.DefaultIfEmpty(req.CS2_CHEATS, "0")),
+			fmt.Sprintf("CS2_TV_ENABLE=%s", util.DefaultIfEmpty(req.CS2_TV_ENABLE, "0")),
+			fmt.Sprintf("CS2_TV_PW=%s", util.DefaultIfEmpty(req.CS2_TV_PW, "")),
+			fmt.Sprintf("CS2_TV_DELAY=%s", util.DefaultIfEmpty(req.CS2_TV_DELAY, "0")),
+			fmt.Sprintf("CS2_TV_AUTORECORD=%s", util.DefaultIfEmpty(req.CS2_TV_AUTORECORD, "0")),
+			fmt.Sprintf("CS2_BOT_QUOTA=%s", util.DefaultIfEmpty(req.CS2_BOT_QUOTA, "0")),
+			fmt.Sprintf("CS2_BOT_DIFFICULTY=%s", util.DefaultIfEmpty(req.CS2_BOT_DIFFICULTY, "1")),
+			fmt.Sprintf("CS2_COMPETITIVE_MODE=%s", util.DefaultIfEmpty(req.CS2_COMPETITIVE_MODE, "0")),
+			fmt.Sprintf("CS2_LOGGING_ENABLED=%s", util.DefaultIfEmpty(req.CS2_LOGGING_ENABLED, "1")),
+			fmt.Sprintf("CS2_GAMEMODE=%s", util.DefaultIfEmpty(req.CS2_GAMEMODE, "0")),
+			fmt.Sprintf("CS2_GAMETYPE=%s", util.DefaultIfEmpty(req.CS2_GAMETYPE, "0")),
 		},
 	}
 
@@ -232,110 +245,172 @@ func dockerContainerCreateHandler(c *gin.Context) {
 	util.Info("容器创建成功 容器 ID: " + createResp.ID)
 }
 
-// dockerContainerStartHandler 处理启动 Docker 容器的请求
+// dockerContainerStartHandler 处理启动一个或多个 Docker 容器的请求，并可选地执行命令
 func dockerContainerStartHandler(c *gin.Context) {
-	// 定义请求参数结构体
+	// 请求参数结构体：name 或 names 至少提供其一；cmds 可选
 	type ContainerStartRequest struct {
-		Name string   `json:"name" binding:"required"`
-		Cmds []string `json:"cmds"` // 可选的命令参数
+		Name  string   `json:"name"`
+		Names []string `json:"names"`
+		Cmds  []string `json:"cmds"`
 	}
 
-	// 从请求中解析参数
 	var req ContainerStartRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	// 启动容器
-	err := docker.Cli.ContainerStart(context.Background(), FullName(req.Name), container.StartOptions{})
-	if err != nil {
-		handleErrorResponse(c, "启动容器失败", err)
+
+	// 收集待处理的容器名称
+	var targets []string
+	if len(req.Names) > 0 {
+		targets = req.Names
+	} else if req.Name != "" {
+		targets = []string{req.Name}
+	} else {
+		handleErrorResponse(c, "必须提供 name 或 names 参数", nil)
 		return
 	}
-	// 如果提供了命令参数，则执行命令
-	if req.Cmds != nil {
-		responses, err := ExecRconCommands(FullName(req.Name), req.Cmds)
-		if err != nil {
-			handleErrorResponse(c, "执行命令失败", err)
-			return
-		} else {
-			util.Info("执行命令成功 命令: " + fmt.Sprintf("%v", req.Cmds) + " 响应: " + fmt.Sprintf("%v", responses))
-		}
-		// 返回执行命令的响应
-		c.JSON(200, gin.H{
-			"message":   "执行命令成功",
-			"responses": responses,
-		})
 
+	// 启动成功的容器列表，以及每个容器的命令执行结果
+	var started []string
+	results := make(map[string][]string)
+
+	for _, name := range targets {
+		fullName := FullName(name)
+		// 启动容器
+		if err := docker.Cli.ContainerStart(context.Background(), fullName, container.StartOptions{}); err != nil {
+			handleErrorResponse(c, fmt.Sprintf("启动容器 %s 失败", name), err)
+			return
+		}
+		util.Info(fmt.Sprintf("容器启动成功 容器 ID: %s", name))
+		started = append(started, name)
+
+		// 如果传入了 cmds，则对该容器执行命令
+		if len(req.Cmds) > 0 {
+			responses, err := ExecRconCommands(fullName, req.Cmds)
+			if err != nil {
+				handleErrorResponse(c, fmt.Sprintf("在容器 %s 中执行命令失败", name), err)
+				return
+			}
+			util.Info(fmt.Sprintf("执行命令成功 容器: %s 命令: %v 响应: %v", name, req.Cmds, responses))
+			results[name] = responses
+		}
 	}
 
-	// 返回容器启动成功的消息
-	c.JSON(200, gin.H{
-		"message": "容器启动成功",
-	})
-
-	util.Info("容器启动成功 容器 ID: " + req.Name)
+	// 根据是否执行命令，返回不同结构的 JSON
+	if len(req.Cmds) > 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"message":   "容器启动并执行命令成功",
+			"started":   started,
+			"responses": results,
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "容器启动成功",
+			"started": started,
+		})
+	}
 }
 
-// dockerContainerStopHandler 处理停止 Docker 容器的请求
+// dockerContainerStopHandler 处理停止一个或多个 Docker 容器的请求
 func dockerContainerStopHandler(c *gin.Context) {
-	// 定义请求参数结构体
+	// 请求参数结构体：name 或 names 至少提供其一
 	type ContainerStopRequest struct {
-		Name string `json:"name" binding:"required"`
+		Name  string   `json:"name"`
+		Names []string `json:"names"`
 	}
 
-	// 从请求中解析参数
 	var req ContainerStopRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	// 停止容器
-	if err := docker.Cli.ContainerStop(context.Background(), FullName(req.Name), container.StopOptions{}); err != nil {
-		handleErrorResponse(c, "停止容器失败", err)
-		return
+
+	// 收集待停止的容器名称
+	var targets []string
+	if len(req.Names) > 0 {
+		targets = req.Names
+	} else if req.Name != "" {
+		targets = []string{req.Name}
 	} else {
-		// 返回容器停止成功的消息
-		c.JSON(200, gin.H{
-			"message": "容器停止成功",
-		})
+		handleErrorResponse(c, "必须提供 name 或 names 参数", nil)
+		return
 	}
 
-	util.Info("容器停止成功 容器 ID: " + req.Name)
+	// 存放已成功停止的容器列表
+	var stopped []string
+
+	for _, name := range targets {
+		fullName := FullName(name)
+		// 停止容器
+		if err := docker.Cli.ContainerStop(context.Background(), fullName, container.StopOptions{}); err != nil {
+			handleErrorResponse(c, fmt.Sprintf("停止容器 %s 失败", name), err)
+			return
+		}
+		util.Info(fmt.Sprintf("容器停止成功 容器 ID: %s", name))
+		stopped = append(stopped, name)
+	}
+
+	// 返回停止成功的消息和列表
+	c.JSON(http.StatusOK, gin.H{
+		"message": "容器停止成功",
+		"stopped": stopped,
+	})
 }
 
-// dockerContainerRestartHandler 处理重启 Docker 容器的请求
+// dockerContainerRestartHandler 处理重启一个或多个 Docker 容器的请求
 func dockerContainerRestartHandler(c *gin.Context) {
-	// 定义请求参数结构体
+	// 请求参数结构体：name 或 names 至少提供其一
 	type ContainerRestartRequest struct {
-		Name string `json:"name" binding:"required"`
+		Name  string   `json:"name"`
+		Names []string `json:"names"`
 	}
 
-	// 从请求中解析参数
+	// 解析请求体
 	var req ContainerRestartRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	// 重启容器
-	if err := docker.Cli.ContainerRestart(context.Background(), FullName(req.Name), container.StopOptions{}); err != nil {
-		handleErrorResponse(c, "重启容器失败", err)
-		return
+
+	// 收集待重启的容器名称
+	var targets []string
+	if len(req.Names) > 0 {
+		targets = req.Names
+	} else if req.Name != "" {
+		targets = []string{req.Name}
 	} else {
-		// 返回容器重启成功的消息
-		c.JSON(200, gin.H{
-			"message": "容器重启成功",
-		})
+		handleErrorResponse(c, "必须提供 name 或 names 参数", nil)
+		return
 	}
 
-	util.Info("容器重启成功 容器 ID: " + req.Name)
+	// 存放已成功重启的容器列表
+	var restarted []string
+
+	for _, name := range targets {
+		fullName := FullName(name)
+		// 重启容器（如需传超时时间可自行拓展 RestartOptions）
+		if err := docker.Cli.ContainerRestart(context.Background(), fullName, container.StopOptions{}); err != nil {
+			handleErrorResponse(c, fmt.Sprintf("重启容器 %s 失败", name), err)
+			return
+		}
+		util.Info(fmt.Sprintf("容器重启成功 容器 ID: %s", name))
+		restarted = append(restarted, name)
+	}
+
+	// 返回重启成功的消息和列表
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "容器重启成功",
+		"restarted": restarted,
+	})
 }
 
 // dockerContainerRemoveHandler 处理删除 Docker 容器的请求
 func dockerContainerRemoveHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type ContainerRemoveRequest struct {
-		Name string `json:"name" binding:"required"`
+		Name  string   `json:"name"`
+		Names []string `json:"names"`
 	}
 
 	// 从请求中解析参数
@@ -344,21 +419,42 @@ func dockerContainerRemoveHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	// 先停止容器
-	if err := docker.Cli.ContainerStop(context.Background(), FullName(req.Name), container.StopOptions{}); err != nil {
-		handleErrorResponse(c, "停止容器失败", err)
-		return
-	}
-	// 删除容器
-	if err := docker.Cli.ContainerRemove(context.Background(), FullName(req.Name), container.RemoveOptions{}); err != nil {
-		handleErrorResponse(c, "删除容器失败", err)
-		return
+
+	// 收集待删除的容器名称
+	var targets []string
+	if len(req.Names) > 0 {
+		targets = req.Names
+	} else if req.Name != "" {
+		targets = []string{req.Name}
 	} else {
-		// 返回容器删除成功的消息
-		c.JSON(200, gin.H{
-			"message": "容器删除成功",
-		})
+		handleErrorResponse(c, "必须提供 name 或 names 参数", nil)
+		return
 	}
+
+	// 存放已成功删除的容器列表
+	var removed []string
+
+	for _, name := range targets {
+		fullName := FullName(name)
+		// 先停止容器
+		if err := docker.Cli.ContainerStop(context.Background(), fullName, container.StopOptions{}); err != nil {
+			handleErrorResponse(c, fmt.Sprintf("停止容器 %s 失败", name), err)
+			return
+		}
+		// 删除容器
+		if err := docker.Cli.ContainerRemove(context.Background(), fullName, container.RemoveOptions{}); err != nil {
+			handleErrorResponse(c, fmt.Sprintf("删除容器 %s 失败", name), err)
+			return
+		}
+		util.Info(fmt.Sprintf("容器删除成功 容器 ID: %s", name))
+		removed = append(removed, name)
+	}
+
+	// 返回删除成功的消息和列表
+	c.JSON(http.StatusOK, gin.H{
+		"message": "容器删除成功",
+		"removed": removed,
+	})
 
 	util.Info("容器删除成功 容器 ID: " + req.Name)
 }

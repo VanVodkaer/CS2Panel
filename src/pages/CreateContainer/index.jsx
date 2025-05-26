@@ -1,53 +1,67 @@
-import { Button, Checkbox, Form, Input, InputNumber, message, Select, Typography } from "antd";
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Button, Checkbox, Form, Input, InputNumber, message, Select, Typography, Space } from "antd";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axiosConfig";
 
 const { Option } = Select;
 const { Text } = Typography;
 
+// 预设游戏模式组合及描述
+const modePresets = [
+  { key: "casual", label: "休闲", type: 0, mode: 0, desc: "休闲模式：适合放松的游戏模式，死亡后玩家可以快速复活。" },
+  {
+    key: "competitive",
+    label: "竞技",
+    type: 0,
+    mode: 1,
+    desc: "竞技模式：玩家之间有较高的对抗性，死后需要等待复活或游戏结束。",
+  },
+  { key: "wingman", label: "决斗", type: 0, mode: 2, desc: "决斗模式：2v2小规模对抗。" },
+  { key: "armsrace", label: "军备竞赛", type: 1, mode: 0, desc: "军备竞赛模式：不断更换武器，专注击杀。" },
+  { key: "demolition", label: "拆除", type: 1, mode: 1, desc: "拆除模式：无固定买枪回合，靠击杀或拆弹获得武器。" },
+  { key: "deathmatch", label: "死亡竞赛", type: 1, mode: 2, desc: "死亡竞赛模式：玩家死亡后立即复活，专注击杀。" },
+  { key: "training", label: "训练", type: 2, mode: 0, desc: "训练模式：仅供练习，无记分。" },
+  { key: "custom", label: "自定义", type: 3, mode: 0, desc: "自定义模式：可通过插件或脚本定义规则。" },
+  { key: "cooperative", label: "合作", type: 4, mode: 0, desc: "合作模式：与 AI 合作完成关卡。" },
+  { key: "skirmish", label: "小冲突", type: 5, mode: 0, desc: "小冲突模式：小规模对抗，为休闲娱乐。" },
+];
+
 const CreateContainer = () => {
+  const [form] = Form.useForm();
   const navigate = useNavigate();
-  const [form] = Form.useForm(); // 创建表单实例
 
   const [mapOptions, setMapOptions] = useState([]);
   const [availableModes, setAvailableModes] = useState([]);
-  const [gameModeDescription, setGameModeDescription] = useState("");
-  const [gameTypeDescription, setGameTypeDescription] = useState("");
+  const [presetDesc, setPresetDesc] = useState("");
 
-  // 游戏模式说明更新
-  const handleGameModeChange = useCallback(
-    (selectedMode) => {
-      form.setFieldsValue({ cs2_gamemode: selectedMode }); // 显式更新表单字段值
-
-      if (selectedMode === "0") {
-        setGameModeDescription(
-          "休闲模式：适合放松的游戏模式，死亡后玩家可以快速复活。你可以轻松地享受游戏，不用担心复活时间太长。"
-        );
-      } else if (selectedMode === "1") {
-        setGameModeDescription(
-          "竞技模式：玩家之间有较高的对抗性，死后需要等待复活或游戏结束。通常是更为严肃的游戏体验，适合高手玩家。"
-        );
-      } else if (selectedMode === "2") {
-        setGameModeDescription(
-          "死亡竞赛模式：玩家每次死亡后会立即复活，专注于击杀和持续战斗。适合喜欢快速复活并继续战斗的玩家。"
-        );
+  // 预设下拉框变化
+  const handlePresetChange = useCallback(
+    (key) => {
+      const p = modePresets.find((item) => item.key === key);
+      if (p) {
+        form.setFieldsValue({
+          cs2_gametype: p.type,
+          cs2_gamemode: p.mode,
+          preset: p.key,
+        });
+        setPresetDesc(p.desc);
       }
     },
     [form]
   );
 
-  // 游戏类型说明更新
-  const handleGameTypeChange = useCallback(
-    (selectedType) => {
-      form.setFieldsValue({ cs2_gametype: selectedType }); // 显式更新表单字段值
-
-      if (selectedType === "0") {
-        setGameTypeDescription("普通类型：标准的游戏体验，没有特殊规则。适合大多数玩家，带有常规的游戏玩法和目标。");
-      } else if (selectedType === "1") {
-        setGameTypeDescription(
-          "死亡竞赛类型：专注于快速复活和持续战斗，适合喜欢快速节奏的玩家。玩家每次死亡后立即复活，注重击杀和存活。"
-        );
+  // 数值输入变化时同步下拉并更新描述
+  const handleValuesChange = useCallback(
+    (changed, all) => {
+      const type = all.cs2_gametype;
+      const mode = all.cs2_gamemode;
+      const p = modePresets.find((item) => item.type === type && item.mode === mode);
+      if (p) {
+        form.setFieldsValue({ preset: p.key });
+        setPresetDesc(p.desc);
+      } else {
+        form.setFieldsValue({ preset: undefined });
+        setPresetDesc(`自定义：game_type=${type}, game_mode=${mode}`);
       }
     },
     [form]
@@ -56,10 +70,10 @@ const CreateContainer = () => {
   // 获取地图列表
   const fetchMapList = async () => {
     try {
-      const mapList = await api.get("/info/map/list");
-      setMapOptions(mapList.data.maps);
-    } catch (error) {
-      console.error("获取地图列表时出错:", error);
+      const resp = await api.get("/info/map/list");
+      setMapOptions(resp.data.maps);
+    } catch (err) {
+      console.error("获取地图列表时出错:", err);
     }
   };
 
@@ -67,79 +81,75 @@ const CreateContainer = () => {
     fetchMapList();
   }, []);
 
+  // 初始化默认值
   useEffect(() => {
-    handleGameModeChange("0");
-    handleGameTypeChange("0");
+    const init = modePresets[0];
     form.setFieldsValue({
-      cs2_gamemode: "0",
-      cs2_gametype: "0",
-    }); // 主动设置初始值
-  }, [form, handleGameModeChange, handleGameTypeChange]); // 添加缺失的依赖函数
+      cs2_gametype: init.type,
+      cs2_gamemode: init.mode,
+      preset: init.key,
+    });
+    setPresetDesc(init.desc);
+  }, [form]);
 
   const onFinish = (values) => {
-    // 将数字类型字段转换为字符串
-    values.cs2_port = values.cs2_port?.toString();
-    values.tv_port = values.tv_port?.toString();
-    values.cs2_rcon_port = values.cs2_rcon_port?.toString();
-    values.cs2_maxplayers = values.cs2_maxplayers?.toString();
-    values.cs2_bot_quota = values.cs2_bot_quota?.toString();
-    values.cs2_tv_delay = values.cs2_tv_delay?.toString();
+    // 将数值字段转为字符串
+    [
+      "cs2_port",
+      "tv_port",
+      "cs2_rcon_port",
+      "cs2_maxplayers",
+      "cs2_bot_quota",
+      "cs2_tv_delay",
+      "cs2_gamemode",
+      "cs2_gametype",
+    ].forEach((k) => {
+      if (values[k] != null) values[k] = values[k].toString();
+    });
+    // 布尔转 "0"/"1"
+    [
+      "cs2_lan",
+      "cs2_cheats",
+      "cs2_tv_enable",
+      "cs2_tv_autorecord",
+      "cs2_competitive_mode",
+      "cs2_logging_enabled",
+    ].forEach((k) => {
+      values[k] = values[k] ? "1" : "0";
+    });
 
-    // 布尔值转为 "0" 或 "1"
-    values.cs2_lan = values.cs2_lan ? "1" : "0";
-    values.cs2_cheats = values.cs2_cheats ? "1" : "0";
-    values.cs2_tv_enable = values.cs2_tv_enable ? "1" : "0";
-    values.cs2_tv_autorecord = values.cs2_tv_autorecord ? "1" : "0";
-    values.cs2_competitive_mode = values.cs2_competitive_mode ? "1" : "0";
-    values.cs2_logging_enabled = values.cs2_logging_enabled ? "1" : "0";
-
-    console.log("提交的表单数据:", values);
-
-    // 发送请求
     api
       .post("/docker/container/create", values)
-      .then((response) => {
-        message.success(`容器创建成功: ${response.data.container_id}`);
-        setTimeout(() => {
-          navigate("/");
-        }, 1000);
+      .then((res) => {
+        message.success(`容器创建成功: ${res.data.container_id}`);
+        setTimeout(() => navigate("/"), 1000);
       })
-      .catch((error) => {
-        const errorMsg = error.response?.data?.message || error.message;
-        message.error(`创建容器失败: ${errorMsg}`);
+      .catch((err) => {
+        const msg = err.response?.data?.message || err.message;
+        message.error(`创建容器失败: ${msg}`);
       });
   };
 
-  const onFinishFailed = (error) => {
-    console.error(error);
-
-    const errorMessage = error.errorFields
-      .map((field) => `${field.name.join(".")}: ${field.errors.join(" ")}`)
-      .join("\n");
-
-    message.error(`创建容器失败:\n${errorMessage}`);
+  const onFinishFailed = ({ errorFields }) => {
+    const msg = errorFields.map((f) => `${f.name.join(".")}: ${f.errors.join(" ")}`).join("\n");
+    message.error(`创建容器失败:\n${msg}`);
   };
 
-  // 地图变更处理
-  const handleMapChange = (selectedMapInternalName) => {
-    const selectedMap = mapOptions.find((map) => map.internal_name === selectedMapInternalName);
-    if (selectedMap) {
-      setAvailableModes(selectedMap.playable_modes);
-    }
+  const handleMapChange = (key) => {
+    const m = mapOptions.find((m) => m.internal_name === key);
+    setAvailableModes(m ? m.playable_modes : []);
   };
 
   const randomPort = () => Math.floor(Math.random() * (49151 - 1024 + 1)) + 1024;
 
   return (
     <Form
-      className="create-container-form"
-      name="basic"
+      form={form}
+      name="create-cs2"
       labelCol={{ span: 8 }}
       wrapperCol={{ span: 16 }}
       style={{ maxWidth: 600 }}
-      form={form} // 绑定表单实例
       initialValues={{
-        remember: true,
         cs2_servername: "",
         cs2_port: randomPort(),
         cs2_rcon_port: randomPort(),
@@ -147,12 +157,6 @@ const CreateContainer = () => {
         cs2_maxplayers: 10,
         cs2_lan: false,
         cs2_bot_difficulty: "1",
-        cs2_gamemode: "0",
-        cs2_gametype: "0",
-        cs2_startmap: "",
-        cs2_mapgroup: "",
-        cs2_pw: "",
-        cs2_rconpw: "",
         cs2_cheats: false,
         cs2_tv_enable: false,
         cs2_tv_pw: "",
@@ -162,6 +166,7 @@ const CreateContainer = () => {
         cs2_competitive_mode: false,
         cs2_logging_enabled: true,
       }}
+      onValuesChange={handleValuesChange}
       onFinish={onFinish}
       onFinishFailed={onFinishFailed}
       autoComplete="off">
@@ -169,27 +174,27 @@ const CreateContainer = () => {
         <Input />
       </Form.Item>
 
-      <Form.Item label="服务器名称" name="cs2_servername" rules={[{ required: false }]}>
+      <Form.Item label="服务器名称" name="cs2_servername">
         <Input />
       </Form.Item>
 
-      <Form.Item label="服务器端口" name="cs2_port" rules={[{ required: false }]}>
+      <Form.Item label="服务器端口" name="cs2_port">
         <InputNumber min={1024} max={49151} />
       </Form.Item>
 
-      <Form.Item label="服务器密码" name="cs2_pw" rules={[{ required: false }]}>
+      <Form.Item label="服务器密码" name="cs2_pw">
         <Input />
       </Form.Item>
 
-      <Form.Item label="RCON端口" name="cs2_rcon_port" rules={[{ required: false }]}>
+      <Form.Item label="RCON 端口" name="cs2_rcon_port">
         <InputNumber min={1024} max={49151} />
       </Form.Item>
 
-      <Form.Item label="RCON密码" name="cs2_rconpw" rules={[{ required: false }]}>
+      <Form.Item label="RCON 密码" name="cs2_rconpw">
         <Input />
       </Form.Item>
 
-      <Form.Item label="TV端口" name="tv_port" rules={[{ required: false }]}>
+      <Form.Item label="TV 端口" name="tv_port">
         <InputNumber min={1024} max={49151} />
       </Form.Item>
 
@@ -197,45 +202,48 @@ const CreateContainer = () => {
         <Checkbox />
       </Form.Item>
 
-      <Form.Item label="最大玩家数" name="cs2_maxplayers" rules={[{ required: false }]}>
+      <Form.Item label="最大玩家数" name="cs2_maxplayers">
         <InputNumber min={1} max={64} />
       </Form.Item>
 
-      <Form.Item label="开始地图" name="cs2_startmap" rules={[{ required: false }]}>
+      <Form.Item label="开始地图" name="cs2_startmap">
         <Select onChange={handleMapChange}>
-          {mapOptions.map((map) => (
-            <Option key={map.internal_name} value={map.internal_name}>
-              {map.name}
+          {mapOptions.map((m) => (
+            <Option key={m.internal_name} value={m.internal_name}>
+              {m.name}
             </Option>
           ))}
         </Select>
       </Form.Item>
 
       {availableModes.length > 0 && (
-        <Form.Item label="可用模式" name="cs2_playable_modes">
+        <Form.Item label="可用模式">
           <Text>{availableModes.join(" / ")}</Text>
         </Form.Item>
       )}
 
-      <Form.Item label="游戏模式" name="cs2_gamemode" rules={[{ required: false }]}>
-        <div>
-          <Select onChange={handleGameModeChange} value={form.getFieldValue("cs2_gamemode")}>
-            <Option value="0">休闲</Option>
-            <Option value="1">竞技</Option>
-            <Option value="2">死亡竞赛</Option>
-          </Select>
-          <Text type="secondary">{gameModeDescription}</Text>
-        </div>
-      </Form.Item>
-
-      <Form.Item label="游戏类型" name="cs2_gametype" rules={[{ required: false }]}>
-        <div>
-          <Select onChange={handleGameTypeChange} value={form.getFieldValue("cs2_gametype")}>
-            <Option value="0">普通</Option>
-            <Option value="1">死亡竞赛</Option>
-          </Select>
-          <Text type="secondary">{gameTypeDescription}</Text>
-        </div>
+      {/* 游戏模式/类型 统一设置组 */}
+      <Form.Item label="游戏模式设置">
+        <Space.Compact>
+          <Form.Item name="cs2_gametype" noStyle>
+            <InputNumber min={0} max={5} placeholder="game_type" />
+          </Form.Item>
+          <Form.Item name="cs2_gamemode" noStyle>
+            <InputNumber min={0} max={2} placeholder="game_mode" />
+          </Form.Item>
+          <Form.Item noStyle>
+            <Select placeholder="选择模式" onChange={handlePresetChange} style={{ width: 120 }}>
+              {modePresets.map((p) => (
+                <Option key={p.key} value={p.key}>
+                  {p.label}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+        </Space.Compact>
+        <Text type="secondary" style={{ display: "block", marginTop: 8 }}>
+          {presetDesc}
+        </Text>
       </Form.Item>
 
       <Form.Item label="允许作弊" name="cs2_cheats" valuePropName="checked">
@@ -246,11 +254,11 @@ const CreateContainer = () => {
         <Checkbox />
       </Form.Item>
 
-      <Form.Item label="SourceTV密码" name="cs2_tv_pw" rules={[{ required: false }]}>
+      <Form.Item label="SourceTV 密码" name="cs2_tv_pw">
         <Input.Password />
       </Form.Item>
 
-      <Form.Item label="SourceTV延迟 (秒)" name="cs2_tv_delay" rules={[{ required: false }]}>
+      <Form.Item label="SourceTV 延迟 (秒)" name="cs2_tv_delay">
         <InputNumber min={0} />
       </Form.Item>
 
@@ -258,11 +266,11 @@ const CreateContainer = () => {
         <Checkbox />
       </Form.Item>
 
-      <Form.Item label="机器人配额" name="cs2_bot_quota" rules={[{ required: false }]}>
+      <Form.Item label="机器人配额" name="cs2_bot_quota">
         <InputNumber min={0} />
       </Form.Item>
 
-      <Form.Item label="机器人难度" name="cs2_bot_difficulty" rules={[{ required: false }]}>
+      <Form.Item label="机器人难度" name="cs2_bot_difficulty">
         <Select>
           <Option value="0">简单</Option>
           <Option value="1">普通</Option>

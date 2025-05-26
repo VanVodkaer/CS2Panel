@@ -147,7 +147,7 @@ func rconGameWarmEndHandler(c *gin.Context) {
 }
 
 // rconGameWarmOfflineHandler 设置私人游戏 / 离线状态下使用机器人时 热身模式是否开启
-func rconGameWarmOffineHandler(c *gin.Context) {
+func rconGameWarmOfflineHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameWarmOfflineRequest struct {
 		Name  string `json:"name" binding:"required"`
@@ -203,7 +203,7 @@ func rconGameWarmPauseHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameWarmPauseRequest struct {
 		Name  string `json:"name" binding:"required"`
-		Value string `json:"value"`
+		Value string `json:"value"` // 0/false 关闭; 1/true 开启 无参数返回当前状态
 	}
 
 	var req RconGameWarmPauseRequest
@@ -229,7 +229,7 @@ func rconGameConfigMaxRoundsHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigMaxRoundsRequest struct {
 		Name      string `json:"name" binding:"required"`
-		MaxRounds string `json:"maxrounds" binding:"required"`
+		MaxRounds string `json:"maxrounds"`
 	}
 
 	var req RconGameConfigMaxRoundsRequest
@@ -255,7 +255,7 @@ func rconGameConfigTimeLimitHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigTimeLimitRequest struct {
 		Name      string `json:"name" binding:"required"`
-		TimeLimit string `json:"timelimit" binding:"required"`
+		TimeLimit string `json:"timelimit"`
 	}
 
 	var req RconGameConfigTimeLimitRequest

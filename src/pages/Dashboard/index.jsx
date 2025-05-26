@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Row, Col, Typography, Space, Button, Table, Popconfirm, message, Checkbox } from "antd";
+import { Row, Col, Typography, Space, Button, Table, Popconfirm, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axiosConfig";
 import {
@@ -11,14 +11,29 @@ import {
 import "./index.less";
 
 const Home = () => {
+  // 列表和加载状态
   const [containers, setContainers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [deletingName, setDeletingName] = useState(null); // 跟踪正在删除的容器名
-  const [stoppingName, setStoppingName] = useState(null); // 跟踪正在停止的容器名
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]); // 跟踪选中的容器
+
+  // 单个操作状态
+  const [deletingName, setDeletingName] = useState(null);
+  const [stoppingName, setStoppingName] = useState(null);
+
+  // 选中行（存储 trimmedName）
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
+  // 批量操作加载状态
+  const [batchStartLoading, setBatchStartLoading] = useState(false);
+  const [batchStopLoading, setBatchStopLoading] = useState(false);
+  const [batchRemoveLoading, setBatchRemoveLoading] = useState(false);
+
   const navigate = useNavigate();
 
-  // 拉取列表
+  // 从完整名称提取 trimmedName
+  const getTrimmedName = (fullName) =>
+    fullName.includes("-") ? fullName.substring(fullName.indexOf("-") + 1) : fullName;
+
+  // 拉取容器列表
   const fetchContainers = async () => {
     setLoading(true);
     try {
@@ -36,103 +51,132 @@ const Home = () => {
     fetchContainers();
   }, []);
 
-  // 启动 / 停止 / 删除
+  // 单个启动
   const handleStart = async (name) => {
     try {
-      await api.post("/docker/container/start", { name });
+      await api.post("/docker/container/start", { name }, { timeout: 60000 });
       message.success("容器已启动");
       fetchContainers();
-    } catch {
+    } catch (err) {
+      console.error(err);
       message.error("启动失败");
     }
   };
+
+  // 单个停止
   const handleStop = async (name) => {
-    setStoppingName(name); // 设置当前正在停止的容器名
+    setStoppingName(name);
     try {
-      // 设置自定义timeout为30000ms，覆盖默认的10000ms
-      await api.post("/docker/container/stop", { name }, { timeout: 30000 });
+      await api.post("/docker/container/stop", { name }, { timeout: 60000 });
       message.success("容器已停止");
-      setTimeout(() => {
-        fetchContainers();
-      }, 500);
-    } catch {
+      setTimeout(fetchContainers, 500);
+    } catch (err) {
+      console.error(err);
       message.error("停止失败");
     } finally {
-      setStoppingName(null); // 清除正在停止状态
+      setStoppingName(null);
     }
   };
+
+  // 单个删除
   const handleRemove = async (name) => {
-    setDeletingName(name); // 设置当前正在删除的容器名
+    setDeletingName(name);
     try {
-      await api.delete("/docker/container/remove", { data: { name } }, { timeout: 40000 });
+      await api.delete("/docker/container/remove", { data: { name } }, { timeout: 60000 });
       message.success("容器已删除");
-      setTimeout(() => {
-        fetchContainers();
-      }, 500);
-    } catch {
+      setTimeout(fetchContainers, 500);
+    } catch (err) {
+      console.error(err);
       message.error("删除失败");
     } finally {
-      setDeletingName(null); // 清除正在删除状态
+      setDeletingName(null);
     }
   };
 
-  // 批量操作相关函数
-  const handleSelectChange = (selectedKeys) => {
-    setSelectedRowKeys(selectedKeys);
+  // 批量启动
+  const handleBatchStart = async () => {
+    if (selectedRowKeys.length === 0) return;
+    setBatchStartLoading(true);
+    try {
+      await api.post("/docker/container/start", { names: selectedRowKeys }, { timeout: 60000 });
+      message.success("批量启动成功");
+      setSelectedRowKeys([]);
+      fetchContainers();
+    } catch (err) {
+      console.error(err);
+      message.error("批量启动失败");
+    } finally {
+      setBatchStartLoading(false);
+    }
   };
 
-  const handleBatchStart = () => {
-    // TODO: 实现批量启动逻辑
-    console.log("批量启动容器:", selectedRowKeys);
+  // 批量停止
+  const handleBatchStop = async () => {
+    if (selectedRowKeys.length === 0) return;
+    setBatchStopLoading(true);
+    try {
+      await api.post("/docker/container/stop", { names: selectedRowKeys }, { timeout: 60000 });
+      message.success("批量停止成功");
+      setSelectedRowKeys([]);
+      setTimeout(fetchContainers, 500);
+    } catch (err) {
+      console.error(err);
+      message.error("批量停止失败");
+    } finally {
+      setBatchStopLoading(false);
+    }
   };
 
-  const handleBatchStop = () => {
-    // TODO: 实现批量停止逻辑
-    console.log("批量停止容器:", selectedRowKeys);
+  // 批量删除
+  const handleBatchRemove = async () => {
+    if (selectedRowKeys.length === 0) return;
+    setBatchRemoveLoading(true);
+    try {
+      await api.post("/docker/container/remove", { names: selectedRowKeys }, { timeout: 60000 });
+      message.success("批量删除成功");
+      setSelectedRowKeys([]);
+      setTimeout(fetchContainers, 500);
+    } catch (err) {
+      console.error(err);
+      message.error("批量删除失败");
+    } finally {
+      setBatchRemoveLoading(false);
+    }
   };
 
-  const handleBatchRemove = () => {
-    // TODO: 实现批量删除逻辑
-    console.log("批量删除容器:", selectedRowKeys);
-  };
-
+  // 连接/复制指令
   const handleConnection = (name) => {
-    getGameConnectUrl(name).then((cmd) => {
-      window.open(cmd, "_blank");
+    getGameConnectUrl(name).then((url) => {
+      window.open(url, "_blank");
     });
   };
-
   const handleCopyConnection = (name) => {
     getGameConnectCommand(name).then((cmd) => {
       navigator.clipboard.writeText(cmd).then(() => {
-        message.success("复制成功");
+        message.success("复制连接指令成功");
       });
     });
   };
-
   const handleSpectate = (name) => {
-    getTvConnectUrl(name).then((cmd) => {
-      window.open(cmd, "_blank");
+    getTvConnectUrl(name).then((url) => {
+      window.open(url, "_blank");
     });
   };
-
   const handleCopySpectate = (name) => {
     getTvConnectCommand(name).then((cmd) => {
       navigator.clipboard.writeText(cmd).then(() => {
-        message.success("复制成功");
+        message.success("复制观战指令成功");
       });
     });
   };
 
+  // 表格列定义
   const columns = [
     {
       title: "容器名称",
       dataIndex: "Names",
       key: "name",
-      render: (names) => {
-        const full = names[0];
-        return full.includes("-") ? full.substring(full.indexOf("-") + 1) : full;
-      },
+      render: (names) => getTrimmedName(names[0]),
     },
     {
       title: "状态",
@@ -143,8 +187,7 @@ const Home = () => {
       title: "操作",
       key: "action",
       render: (_, record) => {
-        const full = record.Names[0];
-        const trimmed = full.includes("-") ? full.substring(full.indexOf("-") + 1) : full;
+        const trimmed = getTrimmedName(record.Names[0]);
         return (
           <Space size="small">
             <Button
@@ -156,7 +199,7 @@ const Home = () => {
             </Button>
             <Button
               size="small"
-              disabled={record.State !== "running" || stoppingName === trimmed} // 如果正在停止，则禁用
+              disabled={record.State !== "running" || stoppingName === trimmed}
               onClick={() => handleStop(trimmed)}>
               {stoppingName === trimmed ? "停止中..." : "停止"}
             </Button>
@@ -176,8 +219,7 @@ const Home = () => {
       title: "复制信息",
       key: "copy",
       render: (_, record) => {
-        const full = record.Names[0];
-        const trimmed = full.includes("-") ? full.substring(full.indexOf("-") + 1) : full;
+        const trimmed = getTrimmedName(record.Names[0]);
         return (
           <Space direction="vertical" size="small">
             <Space size="small">
@@ -202,6 +244,7 @@ const Home = () => {
     },
   ];
 
+  // 头部操作按钮
   const headerButtons = (
     <Row justify="space-between" align="middle" className="dashboard-header">
       <Col>
@@ -211,21 +254,18 @@ const Home = () => {
       </Col>
       <Col>
         <Space size="middle">
-          <Button
-            type="primary"
-            onClick={() => {
-              // 先更新地图信息
-              api.post("/info/map/update").then(() => {
-                navigate("/container/create");
-              });
-            }}>
+          <Button type="primary" onClick={() => navigate("/container/create")}>
             创建新容器
           </Button>
           {selectedRowKeys.length > 0 && (
             <>
-              <Button onClick={handleBatchStart}>批量启动</Button>
-              <Button onClick={handleBatchStop}>批量停止</Button>
-              <Button danger onClick={handleBatchRemove}>
+              <Button onClick={handleBatchStart} loading={batchStartLoading}>
+                批量启动
+              </Button>
+              <Button onClick={handleBatchStop} loading={batchStopLoading}>
+                批量停止
+              </Button>
+              <Button danger onClick={handleBatchRemove} loading={batchRemoveLoading}>
                 批量删除
               </Button>
             </>
@@ -238,16 +278,16 @@ const Home = () => {
   return (
     <div className="dashboard-container">
       {headerButtons}
-
       <Table
-        rowKey="Id"
+        // rowKey 使用 trimmedName
+        rowKey={(record) => getTrimmedName(record.Names[0])}
         columns={columns}
         dataSource={containers}
         loading={loading}
         pagination={false}
         rowSelection={{
-          selectedRowKeys: selectedRowKeys,
-          onChange: handleSelectChange,
+          selectedRowKeys,
+          onChange: setSelectedRowKeys,
           columnWidth: 50,
         }}
       />

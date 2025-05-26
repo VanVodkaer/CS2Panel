@@ -26,7 +26,7 @@ func ServerSetRouter(router *gin.Engine) {
 				containerGroup.POST("/start", dockerContainerStartHandler)
 				containerGroup.POST("/stop", dockerContainerStopHandler)
 				containerGroup.POST("/restart", dockerContainerRestartHandler)
-				containerGroup.DELETE("/remove", dockerContainerRemoveHandler)
+				containerGroup.POST("/remove", dockerContainerRemoveHandler)
 			}
 
 		}
@@ -63,11 +63,11 @@ func ServerSetRouter(router *gin.Engine) {
 				{
 					warmGroup.POST("/start", rconGameWarmStartHandler)
 					warmGroup.POST("/end", rconGameWarmEndHandler)
-					warmGroup.POST("/offine", rconGameWarmOffineHandler)
+					warmGroup.POST("/offline", rconGameWarmOfflineHandler)
 					warmGroup.POST("/time", rconGameWarmTimeHandler)
 					warmGroup.POST("/pause", rconGameWarmPauseHandler)
 				}
-				configGroup := rconGroup.Group("/config")
+				configGroup := gameGroup.Group("/config")
 				{
 					configGroup.POST("/maxrounds", rconGameConfigMaxRoundsHandler)
 					configGroup.POST("/timelimit", rconGameConfigTimeLimitHandler)
