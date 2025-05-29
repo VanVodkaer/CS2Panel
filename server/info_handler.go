@@ -1,8 +1,6 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/VanVodkaer/CS2Panel/config"
 	"github.com/gin-gonic/gin"
 )
@@ -158,56 +156,6 @@ func infoNetworkTVPortHandler(c *gin.Context) {
 	})
 }
 
-// infoNetworkGamePortsHandler 处理获取网络端口的请求
-func infoNetworkGamePortsHandler(c *gin.Context) {
-	// 使用 QueryArray 获取 name 参数列表
-	names := c.QueryArray("name")
-	if len(names) == 0 {
-		handleErrorResponse(c, "无效的请求参数", fmt.Errorf("缺少 name 参数"))
-		return
-	}
-
-	// 获取网络端口信息
-	var allPorts []string
-	for _, name := range names {
-		ports, err := GetEnvValue(FullName(name), "CS2_PORT")
-		if err != nil {
-			handleErrorResponse(c, "获取网络端口失败", err)
-			return
-		}
-		allPorts = append(allPorts, ports)
-	}
-
-	c.JSON(200, gin.H{
-		"ports": allPorts,
-	})
-}
-
-// infoNetworkTVPortsHandler 处理获取网络端口的请求
-func infoNetworkTVPortsHandler(c *gin.Context) {
-	// 使用 QueryArray 获取 name 参数列表
-	names := c.QueryArray("name")
-	if len(names) == 0 {
-		handleErrorResponse(c, "无效的请求参数", fmt.Errorf("缺少 name 参数"))
-		return
-	}
-
-	// 获取TV端口信息
-	var allPorts []string
-	for _, name := range names {
-		ports, err := GetEnvValue(FullName(name), "TV_PORT")
-		if err != nil {
-			handleErrorResponse(c, "获取TV端口失败", err)
-			return
-		}
-		allPorts = append(allPorts, ports)
-	}
-
-	c.JSON(200, gin.H{
-		"ports": allPorts,
-	})
-}
-
 // infoNetworkGamePasswdHandler 处理获取游戏密码的请求
 func infoNetworkGamePasswdHandler(c *gin.Context) {
 	// 定义请求参数结构体
@@ -253,53 +201,5 @@ func infoNetworkTVPasswdHandler(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"passwd": passwd,
-	})
-}
-
-// infoNetworkGamePasswdsHandler 处理获取游戏密码的请求
-func infoNetworkGamePasswdsHandler(c *gin.Context) {
-	// 获取 name 参数列表
-	names := c.QueryArray("name")
-	if len(names) == 0 {
-		handleErrorResponse(c, "无效的请求参数", fmt.Errorf("缺少 name 参数"))
-		return
-	}
-	// 获取游戏密码
-	var allPasswds []string
-	for _, name := range names {
-		passwd, err := GetEnvValue(FullName(name), "CS2_PW")
-		if err != nil {
-			handleErrorResponse(c, "获取游戏密码失败", err)
-			return
-		}
-		allPasswds = append(allPasswds, passwd)
-	}
-
-	c.JSON(200, gin.H{
-		"passwds": allPasswds,
-	})
-}
-
-// infoNetworkTVPasswdsHandler 处理获取TV密码的请求
-func infoNetworkTVPasswdsHandler(c *gin.Context) {
-	// 获取 name 参数列表
-	names := c.QueryArray("name")
-	if len(names) == 0 {
-		handleErrorResponse(c, "无效的请求参数", fmt.Errorf("缺少 name 参数"))
-		return
-	}
-	// 获取TV密码
-	var allPasswds []string
-	for _, name := range names {
-		passwd, err := GetEnvValue(FullName(name), "CS2_TV_PW")
-		if err != nil {
-			handleErrorResponse(c, "获取TV密码失败", err)
-			return
-		}
-		allPasswds = append(allPasswds, passwd)
-	}
-
-	c.JSON(200, gin.H{
-		"passwds": allPasswds,
 	})
 }

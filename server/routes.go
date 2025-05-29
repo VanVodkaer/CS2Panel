@@ -43,13 +43,9 @@ func ServerSetRouter(router *gin.Engine) {
 			{
 				networkGroup.GET("/addr", infoNetworkAddrHandler)
 				networkGroup.GET("/gameport", infoNetworkGamePortHandler)
-				networkGroup.GET("/gameports", infoNetworkGamePortsHandler)
 				networkGroup.GET("/tvport", infoNetworkTVPortHandler)
-				networkGroup.GET("/tvports", infoNetworkTVPortsHandler)
 				networkGroup.GET("/gamepasswd", infoNetworkGamePasswdHandler)
-				networkGroup.GET("/gamepasswds", infoNetworkGamePasswdsHandler)
 				networkGroup.GET("/tvpasswd", infoNetworkTVPasswdHandler)
-				networkGroup.GET("/tvpasswds", infoNetworkTVPasswdsHandler)
 			}
 		}
 		rconGroup := apiGroup.Group("/rcon")
@@ -59,11 +55,12 @@ func ServerSetRouter(router *gin.Engine) {
 			{
 				gameGroup.GET("/status", rconGameStatusHandler)
 				gameGroup.POST("/restart", rconGameRestartHandler)
+				gameGroup.POST("/mode", rconGameConfigModeHandler)
+
 				warmGroup := gameGroup.Group("/warm")
 				{
 					warmGroup.POST("/start", rconGameWarmStartHandler)
 					warmGroup.POST("/end", rconGameWarmEndHandler)
-					warmGroup.POST("/offline", rconGameWarmOfflineHandler)
 					warmGroup.POST("/time", rconGameWarmTimeHandler)
 					warmGroup.POST("/pause", rconGameWarmPauseHandler)
 				}
@@ -74,7 +71,7 @@ func ServerSetRouter(router *gin.Engine) {
 					configGroup.POST("/roundtime", rconGameConfigRoundTimeHandler)
 					configGroup.POST("/freezetime", rconGameConfigFreezetimeHandler)
 					configGroup.POST("/buytime", rconGameConfigBuytimeHandler)
-					configGroup.POST("/buy_anywhere", rconGameConfigBuyAnywhereHandler)
+					configGroup.POST("/buyanywhere", rconGameConfigBuyAnywhereHandler)
 					configGroup.POST("/startmoney", rconGameConfigStartMoneyHandler)
 					configGroup.POST("/maxmoney", rconGameConfigMaxMoneyHandler)
 					configGroup.POST("/autoteambalance", rconGameConfigAutoTeamBalanceHandler)

@@ -114,6 +114,7 @@ const CreateContainer = () => {
       "cs2_tv_autorecord",
       "cs2_competitive_mode",
       "cs2_logging_enabled",
+      "steamappvalidate",
     ].forEach((k) => {
       values[k] = values[k] ? "1" : "0";
     });
@@ -165,6 +166,7 @@ const CreateContainer = () => {
         cs2_bot_quota: 0,
         cs2_competitive_mode: false,
         cs2_logging_enabled: true,
+        steamappvalidate: false,
       }}
       onValuesChange={handleValuesChange}
       onFinish={onFinish}
@@ -287,6 +289,14 @@ const CreateContainer = () => {
         <Checkbox />
       </Form.Item>
 
+      <Form.Item label="开启校验" name="steamappvalidate" valuePropName="checked">
+        <Space>
+          <Checkbox />
+          <Typography.Text>开启 Steam 应用校验（验证游戏文件完整性）</Typography.Text>
+        </Space>
+      </Form.Item>
+
+      {/* 开启 Steam 应用校验（验证游戏文件完整性） */}
       <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
         <Button type="primary" htmlType="submit">
           创建容器

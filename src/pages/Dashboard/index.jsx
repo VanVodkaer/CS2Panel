@@ -3,10 +3,10 @@ import { Row, Col, Typography, Space, Button, Table, Popconfirm, message } from 
 import { useNavigate } from "react-router-dom";
 import api from "../../config/axiosConfig";
 import {
-  getTvConnectCommand,
+  // getTvConnectCommand,
   getGameConnectCommand,
   getGameConnectUrl,
-  getTvConnectUrl,
+  // getTvConnectUrl,
 } from "../../util/connectServer";
 import "./index.less";
 
@@ -34,17 +34,20 @@ const Home = () => {
     fullName.includes("-") ? fullName.substring(fullName.indexOf("-") + 1) : fullName;
 
   // 拉取容器列表
-  const fetchContainers = async () => {
+  const fetchContainers = () => {
     setLoading(true);
-    try {
-      const res = await api.get("/docker/container/list");
-      setContainers(res.data.containers || []);
-    } catch (err) {
-      console.error(err);
-      message.error("获取容器列表失败");
-    } finally {
-      setLoading(false);
-    }
+    api
+      .get("/docker/container/list")
+      .then((res) => {
+        setContainers(res.data.containers || []);
+      })
+      .catch((err) => {
+        console.error(err);
+        message.error("获取容器列表失败");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   useEffect(() => {
@@ -52,96 +55,114 @@ const Home = () => {
   }, []);
 
   // 单个启动
-  const handleStart = async (name) => {
-    try {
-      await api.post("/docker/container/start", { name }, { timeout: 60000 });
-      message.success("容器已启动");
-      fetchContainers();
-    } catch (err) {
-      console.error(err);
-      message.error("启动失败");
-    }
+  const handleStart = (name) => {
+    api
+      .post("/docker/container/start", { name }, { timeout: 60000 })
+      .then(() => {
+        message.success("容器已启动");
+        fetchContainers();
+      })
+      .catch((err) => {
+        console.error(err);
+        message.error("启动失败");
+      });
   };
 
   // 单个停止
-  const handleStop = async (name) => {
+  const handleStop = (name) => {
     setStoppingName(name);
-    try {
-      await api.post("/docker/container/stop", { name }, { timeout: 60000 });
-      message.success("容器已停止");
-      setTimeout(fetchContainers, 500);
-    } catch (err) {
-      console.error(err);
-      message.error("停止失败");
-    } finally {
-      setStoppingName(null);
-    }
+    api
+      .post("/docker/container/stop", { name }, { timeout: 60000 })
+      .then(() => {
+        message.success("容器已停止");
+        // 停止后稍作延迟再刷新列表
+        setTimeout(fetchContainers, 500);
+      })
+      .catch((err) => {
+        console.error(err);
+        message.error("停止失败");
+      })
+      .finally(() => {
+        setStoppingName(null);
+      });
   };
 
   // 单个删除
-  const handleRemove = async (name) => {
+  const handleRemove = (name) => {
     setDeletingName(name);
-    try {
-      await api.delete("/docker/container/remove", { data: { name } }, { timeout: 60000 });
-      message.success("容器已删除");
-      setTimeout(fetchContainers, 500);
-    } catch (err) {
-      console.error(err);
-      message.error("删除失败");
-    } finally {
-      setDeletingName(null);
-    }
+    api
+      .post("/docker/container/remove", { name }, { timeout: 60000 })
+      .then(() => {
+        message.success("容器已删除");
+        setTimeout(fetchContainers, 500);
+      })
+      .catch((err) => {
+        console.error(err);
+        message.error("删除失败");
+      })
+      .finally(() => {
+        setDeletingName(null);
+      });
   };
 
   // 批量启动
-  const handleBatchStart = async () => {
+  const handleBatchStart = () => {
     if (selectedRowKeys.length === 0) return;
     setBatchStartLoading(true);
-    try {
-      await api.post("/docker/container/start", { names: selectedRowKeys }, { timeout: 60000 });
-      message.success("批量启动成功");
-      setSelectedRowKeys([]);
-      fetchContainers();
-    } catch (err) {
-      console.error(err);
-      message.error("批量启动失败");
-    } finally {
-      setBatchStartLoading(false);
-    }
+    api
+      .post("/docker/container/start", { names: selectedRowKeys }, { timeout: 60000 })
+      .then(() => {
+        message.success("批量启动成功");
+        setSelectedRowKeys([]);
+        fetchContainers();
+      })
+      .catch((err) => {
+        console.error(err);
+        message.error("批量启动失败");
+      })
+      .finally(() => {
+        setBatchStartLoading(false);
+      });
   };
 
   // 批量停止
-  const handleBatchStop = async () => {
+  const handleBatchStop = () => {
     if (selectedRowKeys.length === 0) return;
     setBatchStopLoading(true);
-    try {
-      await api.post("/docker/container/stop", { names: selectedRowKeys }, { timeout: 60000 });
-      message.success("批量停止成功");
-      setSelectedRowKeys([]);
-      setTimeout(fetchContainers, 500);
-    } catch (err) {
-      console.error(err);
-      message.error("批量停止失败");
-    } finally {
-      setBatchStopLoading(false);
-    }
+    api
+      .post("/docker/container/stop", { names: selectedRowKeys }, { timeout: 60000 })
+      .then(() => {
+        message.success("批量停止成功");
+        setSelectedRowKeys([]);
+        setTimeout(fetchContainers, 500);
+      })
+      .catch((err) => {
+        console.error(err);
+        message.error("批量停止失败");
+      })
+      .finally(() => {
+        setBatchStopLoading(false);
+      });
   };
 
   // 批量删除
-  const handleBatchRemove = async () => {
+  const handleBatchRemove = () => {
     if (selectedRowKeys.length === 0) return;
     setBatchRemoveLoading(true);
-    try {
-      await api.post("/docker/container/remove", { names: selectedRowKeys }, { timeout: 60000 });
-      message.success("批量删除成功");
-      setSelectedRowKeys([]);
-      setTimeout(fetchContainers, 500);
-    } catch (err) {
-      console.error(err);
-      message.error("批量删除失败");
-    } finally {
-      setBatchRemoveLoading(false);
-    }
+    api
+      .post("/docker/container/remove", { names: selectedRowKeys }, { timeout: 60000 })
+      .then(() => {
+        message.success("批量删除成功");
+        setSelectedRowKeys([]);
+        setTimeout(fetchContainers, 500);
+      })
+      .catch((err) => {
+        console.error(err);
+        message.error("批量删除失败");
+      })
+      .finally(() => {
+        setBatchRemoveLoading(false);
+      });
   };
 
   // 连接/复制指令
@@ -157,18 +178,18 @@ const Home = () => {
       });
     });
   };
-  const handleSpectate = (name) => {
-    getTvConnectUrl(name).then((url) => {
-      window.open(url, "_blank");
-    });
-  };
-  const handleCopySpectate = (name) => {
-    getTvConnectCommand(name).then((cmd) => {
-      navigator.clipboard.writeText(cmd).then(() => {
-        message.success("复制观战指令成功");
-      });
-    });
-  };
+  // const handleSpectate = (name) => {
+  //   getTvConnectUrl(name).then((url) => {
+  //     window.open(url, "_blank");
+  //   });
+  // };
+  // const handleCopySpectate = (name) => {
+  //   getTvConnectCommand(name).then((cmd) => {
+  //     navigator.clipboard.writeText(cmd).then(() => {
+  //       message.success("复制观战指令成功");
+  //     });
+  //   });
+  // };
 
   // 表格列定义
   const columns = [
@@ -230,14 +251,14 @@ const Home = () => {
                 复制连接指令
               </Button>
             </Space>
-            <Space size="small">
+            {/* <Space size="small">
               <Button size="small" onClick={() => handleSpectate(trimmed)}>
                 观战服务器
               </Button>
               <Button size="small" onClick={() => handleCopySpectate(trimmed)}>
                 复制观战指令
               </Button>
-            </Space>
+            </Space> */}
           </Space>
         );
       },

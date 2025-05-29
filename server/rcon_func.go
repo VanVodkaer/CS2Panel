@@ -5,25 +5,33 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	rcon "github.com/forewing/csgo-rcon"
 )
 
-// ExecRconCommand 执行Rcon命令
+// 全局互斥锁，确保RCON命令顺序执行
+var rconMutex sync.Mutex
+
+// ExecRconCommand 执行Rcon命令（简化版本）
 func ExecRconCommand(name string, command string) (string, error) {
+	// 使用互斥锁确保命令顺序执行
+	rconMutex.Lock()
+	defer rconMutex.Unlock()
+
 	port, err := GetEnvValue(name, "CS2_RCON_PORT")
 	if err != nil {
 		return "", fmt.Errorf("获取Rcon端口失败，请检查容器是否存在或Rcon端口是否正确配置: %v", err)
 	}
-	// 创建Rcon客户端
+
 	passwd, err := GetEnvValue(name, "CS2_RCONPW")
 	if err != nil {
 		return "", fmt.Errorf("获取Rcon密码失败: %v", err)
 	}
-	client := rcon.New(fmt.Sprintf("localhost:%s", port), passwd, 1*time.Second)
 
-	// 执行Rcon命令
+	// 创建Rcon客户端并执行命令
+	client := rcon.New(fmt.Sprintf("localhost:%s", port), passwd, 1*time.Second)
 	response, err := client.Execute(command)
 	if err != nil {
 		return "", fmt.Errorf("执行Rcon命令失败: %v", err)
@@ -32,6 +40,7 @@ func ExecRconCommand(name string, command string) (string, error) {
 	return response, nil
 }
 
+// ExecRconCommands 执行多个Rcon命令
 func ExecRconCommands(name string, commands []string) ([]string, error) {
 	var responses []string
 	for _, cmd := range commands {
@@ -79,14 +88,13 @@ type Spawngroup struct {
 
 type PlayerInfo struct {
 	ID      int    `json:"id"`
-	Time    int    `json:"time"`
+	Time    string `json:"time"`
 	Ping    int    `json:"ping"`
 	Loss    int    `json:"loss"`
 	State   string `json:"state"`
 	Rate    int    `json:"rate"`
 	Address string `json:"address"`
 	Name    string `json:"name"`
-	Channel string `json:"channel"`
 }
 
 // 获取服务器状态（主函数调用）
@@ -108,6 +116,8 @@ func ParseCS2Status(output string) (ServerStatus, error) {
 
 	inSpawngroup := false
 	inPlayers := false
+
+	var playerLineRegex = regexp.MustCompile(`^\d+`)
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -179,9 +189,16 @@ func ParseCS2Status(output string) (ServerStatus, error) {
 			sg := parseSpawngroupLine(line)
 			spawngroups = append(spawngroups, sg)
 
-		case inPlayers && strings.HasPrefix(line, "65535"):
-			player := parsePlayerLine(line)
-			players = append(players, player)
+		case inPlayers:
+			// 跳过标题行，例如 "id     time ping loss      state   rate adr name"
+			if strings.HasPrefix(strings.ToLower(strings.TrimSpace(line)), "id") {
+				continue
+			}
+			// 如果行以数字开头，则认为是有效的玩家数据行
+			if playerLineRegex.MatchString(strings.TrimSpace(line)) {
+				player := parsePlayerLine(line)
+				players = append(players, player)
+			}
 		}
 	}
 
@@ -244,18 +261,15 @@ func parseSpawngroupLine(line string) Spawngroup {
 
 func parsePlayerLine(line string) PlayerInfo {
 	fields := strings.Fields(line)
-	if len(fields) < 9 {
-		return PlayerInfo{}
-	}
+
 	return PlayerInfo{
 		ID:      atoi(fields[0]),
-		Channel: fields[1],
-		Time:    atoi(fields[2]),
-		Ping:    atoi(fields[3]),
-		Loss:    atoi(fields[4]),
-		State:   fields[5],
-		Rate:    atoi(fields[6]),
-		Address: fields[7],
-		Name:    fields[8],
+		Time:    fields[1],
+		Ping:    atoi(fields[2]),
+		Loss:    atoi(fields[3]),
+		State:   fields[4],
+		Rate:    atoi(fields[5]),
+		Address: fields[6],
+		Name:    strings.Trim(fields[7], "'"),
 	}
 }

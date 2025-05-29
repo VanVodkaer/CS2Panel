@@ -119,54 +119,34 @@ func dockerContainerListHandler(c *gin.Context) {
 func dockerContainerCreateHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type ContainerCreateRequest struct {
-		// 容器名称 (必填)
+		// 容器名称（必填）
 		Name string `json:"name" binding:"required"`
 
-		// 容器创建时确定的参数
-		// 用于游戏服务器和Rcon的端口 (可选，默认值为 "27015")
-		CS2_PORT string `json:"cs2_port"` // 游戏服务器端口，默认值 "27015"
-		// 用于Rcon的端口 (可选，默认值为 "27015")
-		CS2_RCON_PORT string `json:"cs2_rcon_port"` // RCON 端口，默认值 "27015"
-		// 用于观战服务器状态的端口 (可选，默认值为 "27020")
-		TV_PORT string `json:"tv_port"` // SourceTV 端口，默认值 "27020"
-		// 是否为局域网模式 (可选，默认值为 "0"，"0"为局域网模式，"1"为非局域网模式)
-		CS2_LAN string `json:"cs2_lan"` // 局域网模式，默认值 "0"
-		// 最大玩家数 (可选)
-		CS2_MAXPLAYERS string `json:"cs2_maxplayers"` // 最大玩家数
-		// 游戏开始地图 (可选)
-		CS2_STARTMAP string `json:"cs2_startmap"` // 启动地图，例如 "de_inferno"
-		// 地图组 (可选)
-		CS2_MAPGROUP string `json:"cs2_mapgroup"` // 地图组名称，例如 "mg_active"
+		// 校验参数（可选，默认值为 "1"）
+		STEAMAPPVALIDATE string `json:"steamappvalidate"` // "0" 不校验，"1" 校验
 
-		// 容器运行时的参数（这些可以通过控制台或 RCON 动态修改）
-		// 服务器名称
-		CS2_SERVERNAME string `json:"cs2_servername"` // 服务器名称
-		// RCON 密码
-		CS2_RCONPW string `json:"cs2_rconpw"` // RCON 密码
-		// 连接密码
-		CS2_PW string `json:"cs2_pw"` // 服务器连接密码
-		// 是否允许作弊 (可选，默认值为 "0"，"0" 禁止作弊，"1" 允许作弊)
-		CS2_CHEATS string `json:"cs2_cheats"` // 作弊模式，默认值 "0"
-		// 是否启用 SourceTV (可选，默认值为 "0"，"0" 禁用，"1" 启用)
-		CS2_TV_ENABLE string `json:"cs2_tv_enable"` // 启用 SourceTV，默认值 "0"
-		// SourceTV 密码
-		CS2_TV_PW string `json:"cs2_tv_pw"` // SourceTV 观看密码
-		// SourceTV 延迟 (可选)
-		CS2_TV_DELAY string `json:"cs2_tv_delay"` // SourceTV 延迟，单位为秒
-		// 自动录制 SourceTV (可选，默认值为 "0"，"0" 禁用，"1" 启用)
-		CS2_TV_AUTORECORD string `json:"cs2_tv_autorecord"` // 启用 SourceTV 自动录制，默认值 "0"
-		// 机器人数量 (可选，默认值为 "0")
-		CS2_BOT_QUOTA string `json:"cs2_bot_quota"` // 机器人数量
-		// 机器人难度 (可选，默认值为 "1"，"0" 最容易，"3" 最难)
-		CS2_BOT_DIFFICULTY string `json:"cs2_bot_difficulty"` // 机器人难度，默认值 "1"
-		// 是否开启比赛模式 (可选，默认值为 "0" 启用，"1" 禁用)
-		CS2_COMPETITIVE_MODE string `json:"cs2_competitive_mode"` // 比赛模式，默认值 "0"
-		// 日志记录是否启用 (可选，默认值为 "1"，"1" 启用，"0" 禁用)
-		CS2_LOGGING_ENABLED string `json:"cs2_logging_enabled"` // 日志记录启用，默认值 "1"
-		// 游戏模式 (可选，默认值为 "0"，"0" 为休闲模式，"1" 为竞技模式)
-		CS2_GAMEMODE string `json:"cs2_gamemode"` // 游戏模式，默认值 "0"
-		// 游戏类型 (可选，默认值为 "0"，"0" 为普通游戏，"1" 为死亡竞赛)
-		CS2_GAMETYPE string `json:"cs2_gametype"` // 游戏类型，默认值 "0"
+		// 以下参数均为可选，若未提供则使用默认值
+		CS2_PORT             string `json:"cs2_port"`             // 游戏服务器端口，默认值 "27015"
+		CS2_RCON_PORT        string `json:"cs2_rcon_port"`        // RCON 端口，默认值 "27015"
+		TV_PORT              string `json:"tv_port"`              // SourceTV 端口，默认值 "27020"
+		CS2_LAN              string `json:"cs2_lan"`              // "0" 关闭，"1" 开启局域网模式，默认值 "0"
+		CS2_MAXPLAYERS       string `json:"cs2_maxplayers"`       // 最大玩家数
+		CS2_STARTMAP         string `json:"cs2_startmap"`         // 启动地图，例如 "de_inferno"
+		CS2_MAPGROUP         string `json:"cs2_mapgroup"`         // 地图组名称，例如 "mg_active"
+		CS2_SERVERNAME       string `json:"cs2_servername"`       // 服务器名称
+		CS2_RCONPW           string `json:"cs2_rconpw"`           // RCON 密码
+		CS2_PW               string `json:"cs2_pw"`               // 服务器连接密码
+		CS2_CHEATS           string `json:"cs2_cheats"`           // "0" 禁止作弊，"1" 允许作弊，默认值 "0"
+		CS2_TV_ENABLE        string `json:"cs2_tv_enable"`        // "0" 禁用，"1" 启用 SourceTV，默认值 "0"
+		CS2_TV_PW            string `json:"cs2_tv_pw"`            // SourceTV 观看密码
+		CS2_TV_DELAY         string `json:"cs2_tv_delay"`         // SourceTV 延迟，单位为秒
+		CS2_TV_AUTORECORD    string `json:"cs2_tv_autorecord"`    // "0" 禁用，"1" 启用 SourceTV 自动录制，默认值 "0"
+		CS2_BOT_QUOTA        string `json:"cs2_bot_quota"`        // 机器人数量
+		CS2_BOT_DIFFICULTY   string `json:"cs2_bot_difficulty"`   // "0" 最容易，"3" 最难，默认值 "1"
+		CS2_COMPETITIVE_MODE string `json:"cs2_competitive_mode"` // "0" 启用，"1" 禁用比赛模式，默认值 "0"
+		CS2_LOGGING_ENABLED  string `json:"cs2_logging_enabled"`  // "0" 禁用，"1" 启用日志记录，默认值 "1"
+		CS2_GAMEMODE         string `json:"cs2_gamemode"`         // "0" 休闲模式，"1" 竞技模式，默认值 "0"
+		CS2_GAMETYPE         string `json:"cs2_gametype"`         // "0" 普通游戏，"1" 死亡竞赛，默认值 "0"
 	}
 
 	// 从请求中解析参数
@@ -185,9 +165,10 @@ func dockerContainerCreateHandler(c *gin.Context) {
 			nat.Port(fmt.Sprintf("%s/udp", util.DefaultIfEmpty(req.TV_PORT, "27020"))):       {},
 		},
 		Env: []string{
+			// 校验参数
+			fmt.Sprintf("STEAMAPPVALIDATE=%s", util.DefaultIfEmpty(req.STEAMAPPVALIDATE, "0")),
 			// 固定环境变量
 			fmt.Sprintf("SRCDS_TOKEN=%s", config.GlobalConfig.Game.SRCDS_TOKEN),
-			// 环境变量
 			fmt.Sprintf("CS2_PORT=%s", util.DefaultIfEmpty(req.CS2_PORT, "27015")),
 			fmt.Sprintf("CS2_RCON_PORT=%s", util.DefaultIfEmpty(req.CS2_RCON_PORT, "27015")),
 			fmt.Sprintf("TV_PORT=%s", util.DefaultIfEmpty(req.TV_PORT, "27020")),
@@ -196,8 +177,8 @@ func dockerContainerCreateHandler(c *gin.Context) {
 			fmt.Sprintf("CS2_RCONPW=%s", util.DefaultIfEmpty(req.CS2_RCONPW, config.GlobalConfig.Game.RCON_PASSWORD)),
 			fmt.Sprintf("CS2_LAN=%s", util.DefaultIfEmpty(req.CS2_LAN, "0")),
 			fmt.Sprintf("CS2_MAXPLAYERS=%s", util.DefaultIfEmpty(req.CS2_MAXPLAYERS, "")),
-			fmt.Sprintf("CS2_STARTMAP=%s", util.DefaultIfEmpty(req.CS2_STARTMAP, "")),
-			fmt.Sprintf("CS2_MAPGROUP=%s", util.DefaultIfEmpty(req.CS2_MAPGROUP, "")),
+			fmt.Sprintf("CS2_STARTMAP=%s", util.DefaultIfEmpty(req.CS2_STARTMAP, "de_dust2")),
+			fmt.Sprintf("CS2_MAPGROUP=%s", util.DefaultIfEmpty(req.CS2_MAPGROUP, "mg_active")),
 			fmt.Sprintf("CS2_CHEATS=%s", util.DefaultIfEmpty(req.CS2_CHEATS, "0")),
 			fmt.Sprintf("CS2_TV_ENABLE=%s", util.DefaultIfEmpty(req.CS2_TV_ENABLE, "0")),
 			fmt.Sprintf("CS2_TV_PW=%s", util.DefaultIfEmpty(req.CS2_TV_PW, "")),

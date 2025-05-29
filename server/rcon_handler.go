@@ -62,7 +62,7 @@ func rconGameStatusHandler(c *gin.Context) {
 		if err != nil {
 			util.Error("json.Marshal error: ", err)
 		} else {
-			util.Info("获取游戏状态成功 响应: " + string(data))
+			util.Info("获取游戏状态成功" + " 响应: " + string(data))
 		}
 	}
 	c.JSON(200, gin.H{
@@ -76,7 +76,7 @@ func rconGameRestartHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameRestartRequest struct {
 		Name  string `json:"name" binding:"required"`
-		Delay string `json:"delay"`
+		Value string `json:"value"`
 	}
 
 	var req RconGameRestartRequest
@@ -84,16 +84,57 @@ func rconGameRestartHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	response, err := ExecRconCommand(FullName(req.Name), "mp_restartgame "+req.Delay)
+	response, err := ExecRconCommand(FullName(req.Name), "mp_restartgame "+req.Value)
 	if err != nil {
 		handleErrorResponse(c, "执行命令失败", err)
 		return
 	} else {
-		util.Info("执行命令成功 命令: restart 响应: " + response)
+		util.Info("执行命令成功 命令: mp_restartgame " + req.Value + " 响应: " + response)
 	}
 	c.JSON(200, gin.H{
 		"message":  "执行命令成功",
 		"response": response,
+	})
+}
+
+// rconGameConfigModeHandler
+func rconGameConfigModeHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type RconGameConfigGameModeRequest struct {
+		Name     string `json:"name" binding:"required"`
+		GameMode string `json:"gamemode"`
+		GameType string `json:"gametype"`
+	}
+
+	var req RconGameConfigGameModeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleErrorResponse(c, "无效的请求参数", err)
+		return
+	}
+	var responses []string
+	if req.GameMode != "" {
+		response, err := ExecRconCommand(FullName(req.Name), "game_mode "+req.GameMode)
+		if err != nil {
+			handleErrorResponse(c, "执行命令失败", err)
+			return
+		} else {
+			util.Info("执行命令成功 命令: game_mode " + req.GameMode + " 响应: " + response)
+			responses = append(responses, response)
+		}
+	}
+	if req.GameType != "" {
+		response, err := ExecRconCommand(FullName(req.Name), "game_type "+req.GameType)
+		if err != nil {
+			handleErrorResponse(c, "执行命令失败", err)
+			return
+		} else {
+			util.Info("执行命令成功 命令: game_type " + req.GameType + " 响应: " + response)
+			responses = append(responses, response)
+		}
+	}
+	c.JSON(200, gin.H{
+		"message":   "执行命令成功",
+		"responses": responses,
 	})
 }
 
@@ -146,38 +187,12 @@ func rconGameWarmEndHandler(c *gin.Context) {
 	})
 }
 
-// rconGameWarmOfflineHandler 设置私人游戏 / 离线状态下使用机器人时 热身模式是否开启
-func rconGameWarmOfflineHandler(c *gin.Context) {
-	// 定义请求参数结构体
-	type RconGameWarmOfflineRequest struct {
-		Name  string `json:"name" binding:"required"`
-		Value string `json:"value"` // 0/false 关闭; 1/true 开启 无参数返回当前状态
-	}
-
-	var req RconGameWarmOfflineRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		handleErrorResponse(c, "无效的请求参数", err)
-		return
-	}
-	response, err := ExecRconCommand(FullName(req.Name), "mp_warmup_offline_enabled "+req.Value)
-	if err != nil {
-		handleErrorResponse(c, "执行命令失败", err)
-		return
-	} else {
-		util.Info("执行命令成功 命令: mp_warmup_offline_enabled " + req.Value + " 响应: " + response)
-	}
-	c.JSON(200, gin.H{
-		"message":  "执行命令成功",
-		"response": response,
-	})
-}
-
 // rconGameWarmTimeHandler 设置热身时间
 func rconGameWarmTimeHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameWarmTimeRequest struct {
-		Name string `json:"name" binding:"required"`
-		Time string `json:"time"` // 热身时长 无参数返回当前时长
+		Name  string `json:"name" binding:"required"`
+		Value string `json:"value"` // 热身时长 无参数返回当前时长
 	}
 
 	var req RconGameWarmTimeRequest
@@ -185,12 +200,12 @@ func rconGameWarmTimeHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	response, err := ExecRconCommand(FullName(req.Name), "mp_warmup_time "+req.Time)
+	response, err := ExecRconCommand(FullName(req.Name), "mp_warmuptime "+req.Value)
 	if err != nil {
 		handleErrorResponse(c, "执行命令失败", err)
 		return
 	} else {
-		util.Info("执行命令成功 命令: warmup_time " + req.Time + " 响应: " + response)
+		util.Info("执行命令成功 命令: mp_warmuptime " + req.Value + " 响应: " + response)
 	}
 	c.JSON(200, gin.H{
 		"message":  "执行命令成功",
@@ -228,8 +243,8 @@ func rconGameWarmPauseHandler(c *gin.Context) {
 func rconGameConfigMaxRoundsHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigMaxRoundsRequest struct {
-		Name      string `json:"name" binding:"required"`
-		MaxRounds string `json:"maxrounds"`
+		Name  string `json:"name" binding:"required"`
+		Value string `json:"value"` // 最大回合数 无参数返回当前最大回合数
 	}
 
 	var req RconGameConfigMaxRoundsRequest
@@ -237,12 +252,12 @@ func rconGameConfigMaxRoundsHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	response, err := ExecRconCommand(FullName(req.Name), "mp_maxrounds "+req.MaxRounds)
+	response, err := ExecRconCommand(FullName(req.Name), "mp_maxrounds "+req.Value)
 	if err != nil {
 		handleErrorResponse(c, "执行命令失败", err)
 		return
 	} else {
-		util.Info("执行命令成功 命令: mp_maxrounds " + req.MaxRounds + " 响应: " + response)
+		util.Info("执行命令成功 命令: mp_maxrounds " + req.Value + " 响应: " + response)
 	}
 	c.JSON(200, gin.H{
 		"message":  "执行命令成功",
@@ -251,11 +266,12 @@ func rconGameConfigMaxRoundsHandler(c *gin.Context) {
 }
 
 // rconGameConfigTimeLimitHandler 设置比赛时间限制
+// 每个游戏的最大持续时间，以分钟为单位。默认情况下，此设置处于禁用状态 (设置为 0)。如果当前地图的总持续时间超过此值，当前地图将结束，下一个地图将开始游戏。
 func rconGameConfigTimeLimitHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigTimeLimitRequest struct {
-		Name      string `json:"name" binding:"required"`
-		TimeLimit string `json:"timelimit"`
+		Name  string `json:"name" binding:"required"`
+		Value string `json:"value"` // 比赛时间限制 无参数返回当前时间限制
 	}
 
 	var req RconGameConfigTimeLimitRequest
@@ -263,12 +279,12 @@ func rconGameConfigTimeLimitHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	response, err := ExecRconCommand(FullName(req.Name), "mp_timelimit "+req.TimeLimit)
+	response, err := ExecRconCommand(FullName(req.Name), "mp_timelimit "+req.Value)
 	if err != nil {
 		handleErrorResponse(c, "执行命令失败", err)
 		return
 	} else {
-		util.Info("执行命令成功 命令: mp_timelimit " + req.TimeLimit + " 响应: " + response)
+		util.Info("执行命令成功 命令: mp_timelimit " + req.Value + " 响应: " + response)
 	}
 	c.JSON(200, gin.H{
 		"message":  "执行命令成功",
@@ -280,8 +296,9 @@ func rconGameConfigTimeLimitHandler(c *gin.Context) {
 func rconGameConfigRoundTimeHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigRoundTimeRequest struct {
-		Name      string `json:"name" binding:"required"`
-		RoundTime string `json:"roundtime" binding:"required"`
+		Name  string `json:"name" binding:"required"`
+		Value string `json:"value"` // 回合时间 无参数返回当前回合时间
+		Mode  string `json:"mode"`  // 模式 可选参数 defuse 拆弹模式, hostage 人质解救
 	}
 
 	var req RconGameConfigRoundTimeRequest
@@ -289,12 +306,21 @@ func rconGameConfigRoundTimeHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	response, err := ExecRconCommand(FullName(req.Name), "mp_roundtime "+req.RoundTime)
+	var command string
+	if req.Mode == "defuse" {
+		command = "mp_roundtime_defuse " + req.Value
+	} else if req.Mode == "hostage" {
+		command = "mp_roundtime_hostage " + req.Value
+	} else {
+		command = "mp_roundtime " + req.Value
+	}
+
+	response, err := ExecRconCommand(FullName(req.Name), command)
 	if err != nil {
 		handleErrorResponse(c, "执行命令失败", err)
 		return
 	} else {
-		util.Info("执行命令成功 命令: mp_roundtime " + req.RoundTime + " 响应: " + response)
+		util.Info("执行命令成功 命令: " + command + " 响应: " + response)
 	}
 	c.JSON(200, gin.H{
 		"message":  "执行命令成功",
@@ -306,8 +332,8 @@ func rconGameConfigRoundTimeHandler(c *gin.Context) {
 func rconGameConfigFreezetimeHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigFreezetimeRequest struct {
-		Name       string `json:"name" binding:"required"`
-		FreezeTime string `json:"freezetime" binding:"required"`
+		Name  string `json:"name" binding:"required"`
+		Value string `json:"value"` // 冻结时间 无参数返回当前冻结时间
 	}
 
 	var req RconGameConfigFreezetimeRequest
@@ -315,12 +341,12 @@ func rconGameConfigFreezetimeHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	response, err := ExecRconCommand(FullName(req.Name), "mp_freezetime "+req.FreezeTime)
+	response, err := ExecRconCommand(FullName(req.Name), "mp_freezetime "+req.Value)
 	if err != nil {
 		handleErrorResponse(c, "执行命令失败", err)
 		return
 	} else {
-		util.Info("执行命令成功 命令: mp_freezetime " + req.FreezeTime + " 响应: " + response)
+		util.Info("执行命令成功 命令: mp_freezetime " + req.Value + " 响应: " + response)
 	}
 	c.JSON(200, gin.H{
 		"message":  "执行命令成功",
@@ -332,8 +358,8 @@ func rconGameConfigFreezetimeHandler(c *gin.Context) {
 func rconGameConfigBuytimeHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigBuytimeRequest struct {
-		Name    string `json:"name" binding:"required"`
-		BuyTime string `json:"buytime" binding:"required"`
+		Name  string `json:"name" binding:"required"`
+		Value string `json:"value"`
 	}
 
 	var req RconGameConfigBuytimeRequest
@@ -341,12 +367,12 @@ func rconGameConfigBuytimeHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	response, err := ExecRconCommand(FullName(req.Name), "mp_buytime "+req.BuyTime)
+	response, err := ExecRconCommand(FullName(req.Name), "mp_buytime "+req.Value)
 	if err != nil {
 		handleErrorResponse(c, "执行命令失败", err)
 		return
 	} else {
-		util.Info("执行命令成功 命令: mp_buytime " + req.BuyTime + " 响应: " + response)
+		util.Info("执行命令成功 命令: mp_buytime " + req.Value + " 响应: " + response)
 	}
 	c.JSON(200, gin.H{
 		"message":  "执行命令成功",
@@ -359,7 +385,7 @@ func rconGameConfigBuyAnywhereHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigBuyAnywhereRequest struct {
 		Name  string `json:"name" binding:"required"`
-		Value string `json:"buy_anywhere" binding:"required"`
+		Value string `json:"value"`
 	}
 
 	var req RconGameConfigBuyAnywhereRequest
@@ -384,8 +410,8 @@ func rconGameConfigBuyAnywhereHandler(c *gin.Context) {
 func rconGameConfigStartMoneyHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigStartMoneyRequest struct {
-		Name       string `json:"name" binding:"required"`
-		StartMoney string `json:"startmoney" binding:"required"`
+		Name  string `json:"name" binding:"required"`
+		Value string `json:"value"` // 初始金钱 无参数返回当前初始金钱
 	}
 
 	var req RconGameConfigStartMoneyRequest
@@ -393,12 +419,12 @@ func rconGameConfigStartMoneyHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	response, err := ExecRconCommand(FullName(req.Name), "mp_startmoney "+req.StartMoney)
+	response, err := ExecRconCommand(FullName(req.Name), "mp_startmoney "+req.Value)
 	if err != nil {
 		handleErrorResponse(c, "执行命令失败", err)
 		return
 	} else {
-		util.Info("执行命令成功 命令: mp_startmoney " + req.StartMoney + " 响应: " + response)
+		util.Info("执行命令成功 命令: mp_startmoney " + req.Value + " 响应: " + response)
 	}
 	c.JSON(200, gin.H{
 		"message":  "执行命令成功",
@@ -410,8 +436,8 @@ func rconGameConfigStartMoneyHandler(c *gin.Context) {
 func rconGameConfigMaxMoneyHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigMaxMoneyRequest struct {
-		Name     string `json:"name" binding:"required"`
-		MaxMoney string `json:"maxmoney" binding:"required"`
+		Name  string `json:"name" binding:"required"`
+		Value string `json:"value"` // 最大金钱 无参数返回当前最大金钱
 	}
 
 	var req RconGameConfigMaxMoneyRequest
@@ -419,12 +445,12 @@ func rconGameConfigMaxMoneyHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	response, err := ExecRconCommand(FullName(req.Name), "mp_maxmoney "+req.MaxMoney)
+	response, err := ExecRconCommand(FullName(req.Name), "mp_maxmoney "+req.Value)
 	if err != nil {
 		handleErrorResponse(c, "执行命令失败", err)
 		return
 	} else {
-		util.Info("执行命令成功 命令: mp_maxmoney " + req.MaxMoney + " 响应: " + response)
+		util.Info("执行命令成功 命令: mp_maxmoney " + req.Value + " 响应: " + response)
 	}
 	c.JSON(200, gin.H{
 		"message":  "执行命令成功",
@@ -437,7 +463,7 @@ func rconGameConfigAutoTeamBalanceHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigAutoTeamBalanceRequest struct {
 		Name  string `json:"name" binding:"required"`
-		Value string `json:"autoteambalance" binding:"required"`
+		Value string `json:"value"`
 	}
 
 	var req RconGameConfigAutoTeamBalanceRequest
@@ -458,12 +484,12 @@ func rconGameConfigAutoTeamBalanceHandler(c *gin.Context) {
 	})
 }
 
-// rconGameConfigLimitTeamsHandler 设置队伍人数限制
+// rconGameConfigLimitTeamsHandler 设置两个队伍之间允许存在的玩家差异数量的最大值，0为无限制
 func rconGameConfigLimitTeamsHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigLimitTeamsRequest struct {
 		Name  string `json:"name" binding:"required"`
-		Value string `json:"limitteams" binding:"required"`
+		Value string `json:"value"` // 允许存在的玩家差异数量的最大值 无参数返回当前最大值
 	}
 
 	var req RconGameConfigLimitTeamsRequest
@@ -488,8 +514,8 @@ func rconGameConfigLimitTeamsHandler(c *gin.Context) {
 func rconGameConfigC4TimerHandler(c *gin.Context) {
 	// 定义请求参数结构体
 	type RconGameConfigC4TimerRequest struct {
-		Name   string `json:"name" binding:"required"`
-		C4Time string `json:"c4timer" binding:"required"`
+		Name  string `json:"name" binding:"required"`
+		Value string `json:"value"` // C4 爆炸倒计时 无参数返回当前倒计时
 	}
 
 	var req RconGameConfigC4TimerRequest
@@ -497,12 +523,12 @@ func rconGameConfigC4TimerHandler(c *gin.Context) {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
-	response, err := ExecRconCommand(FullName(req.Name), "mp_c4timer "+req.C4Time)
+	response, err := ExecRconCommand(FullName(req.Name), "mp_c4timer "+req.Value)
 	if err != nil {
 		handleErrorResponse(c, "执行命令失败", err)
 		return
 	} else {
-		util.Info("执行命令成功 命令: mp_c4timer " + req.C4Time + " 响应: " + response)
+		util.Info("执行命令成功 命令: mp_c4timer " + req.Value + " 响应: " + response)
 	}
 	c.JSON(200, gin.H{
 		"message":  "执行命令成功",
