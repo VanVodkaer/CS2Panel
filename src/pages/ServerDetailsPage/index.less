@@ -1,27 +1,91 @@
-.server-card {
-  margin-bottom: 16px;
+// 服务器详情页面主容器
+.server-details-page {
+  .server-status-card {
+    margin-bottom: 16px;
+  }
+
+  .server-tabs {
+    margin-bottom: 16px;
+  }
+
+  .command-input-card {
+    .command-textarea {
+      margin-top: 8px;
+    }
+
+    .command-actions {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+
+      .upload-button {
+        margin-left: 8px;
+      }
+    }
+
+    .command-result {
+      margin-top: 8px;
+    }
+  }
 }
 
-.server-tabs {
-  margin-bottom: 16px;
+// 地图管理组件
+.map-management {
+  .current-map {
+    margin-bottom: 8px;
+  }
+
+  .map-form {
+    margin-top: 8px;
+
+    .map-input {
+      width: 200px;
+    }
+  }
 }
 
-.command-input {
-  margin-top: 8px;
+// 游戏控制组件
+.game-control {
+  // 游戏控制样式
 }
 
-.command-upload-btn {
-  margin-left: 8px;
+// 游戏规则设置组件
+.game-rules-settings {
+  // 游戏规则设置样式
 }
 
-.command-result {
-  margin-top: 8px;
+// 玩家管理组件
+.player-management {
+  .player-actions {
+    margin-bottom: 16px;
+  }
+
+  .message-section {
+    margin-top: 16px;
+  }
 }
 
+// 自定义命令组件
+.custom-command {
+  .command-input {
+    margin-bottom: 8px;
+  }
+
+  .execute-button {
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
+
+  .command-output {
+    margin-top: 8px;
+  }
+}
+
+// 通用样式
 .form-item-inline {
   margin-top: 8px;
-}
 
-.form-item-inline .ant-form-item {
-  margin-right: 16px;
+  .ant-form-item {
+    margin-right: 16px;
+  }
 }
