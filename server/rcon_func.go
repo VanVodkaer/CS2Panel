@@ -11,10 +11,10 @@ import (
 	rcon "github.com/forewing/csgo-rcon"
 )
 
-// 全局互斥锁，确保RCON命令顺序执行
 var rconMutex sync.Mutex
+var semaphore = make(chan struct{}, 3) // 限制最大并发数为3
 
-// ExecRconCommand 执行Rcon命令（简化版本）
+// ExecRconCommand 执行Rcon命令
 func ExecRconCommand(name string, command string) (string, error) {
 	// 使用互斥锁确保命令顺序执行
 	rconMutex.Lock()
@@ -42,14 +42,35 @@ func ExecRconCommand(name string, command string) (string, error) {
 
 // ExecRconCommands 执行多个Rcon命令
 func ExecRconCommands(name string, commands []string) ([]string, error) {
-	var responses []string
-	for _, cmd := range commands {
-		res, err := ExecRconCommand(name, cmd)
-		if err != nil {
-			return nil, err
-		}
-		responses = append(responses, res)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	responses := make([]string, len(commands))
+
+	for i, cmd := range commands {
+		wg.Add(1)
+		go func(index int, command string) {
+			defer wg.Done()
+
+			// 使用信号量限制并发数量
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }() // 释放信号量
+
+			res, err := ExecRconCommand(name, command)
+			if err != nil {
+				fmt.Printf("执行命令失败: %v\n", err)
+				return
+			}
+
+			// 将结果存入对应位置
+			mu.Lock()
+			responses[index] = res
+			mu.Unlock()
+		}(i, cmd)
 	}
+
+	// 等待所有命令执行完毕
+	wg.Wait()
+
 	return responses, nil
 }
 

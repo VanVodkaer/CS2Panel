@@ -83,17 +83,17 @@ function GameRulesSettings({ name, withLoading }) {
   const fetchAllConfigs = async () => {
     try {
       const configs = await Promise.allSettled([
-        api.post("/rcon/game/config/maxrounds", { name }),
-        api.post("/rcon/game/config/timelimit", { name }),
-        api.post("/rcon/game/config/roundtime", { name }),
-        api.post("/rcon/game/config/freezetime", { name }),
-        api.post("/rcon/game/config/buytime", { name }),
-        api.post("/rcon/game/config/buyanywhere", { name }),
-        api.post("/rcon/game/config/startmoney", { name }),
-        api.post("/rcon/game/config/maxmoney", { name }),
-        api.post("/rcon/game/config/autoteambalance", { name }),
-        api.post("/rcon/game/config/limitteams", { name }),
-        api.post("/rcon/game/config/c4timer", { name }),
+        api.post("/rcon/game/config/maxrounds", { name }, { timeout: 60000 }),
+        api.post("/rcon/game/config/timelimit", { name }, { timeout: 60000 }),
+        api.post("/rcon/game/config/roundtime", { name }, { timeout: 60000 }),
+        api.post("/rcon/game/config/freezetime", { name }, { timeout: 60000 }),
+        api.post("/rcon/game/config/buytime", { name }, { timeout: 60000 }),
+        api.post("/rcon/game/config/buyanywhere", { name }, { timeout: 60000 }),
+        api.post("/rcon/game/config/startmoney", { name }, { timeout: 60000 }),
+        api.post("/rcon/game/config/maxmoney", { name }, { timeout: 60000 }),
+        api.post("/rcon/game/config/autoteambalance", { name }, { timeout: 60000 }),
+        api.post("/rcon/game/config/limitteams", { name }, { timeout: 60000 }),
+        api.post("/rcon/game/config/c4timer", { name }, { timeout: 60000 }),
       ]);
 
       if (configs[0].status === "fulfilled")
