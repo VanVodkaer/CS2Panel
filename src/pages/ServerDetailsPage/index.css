@@ -1,46 +1,16 @@
-.server-details-page .server-status-card {
+.server-card {
   margin-bottom: 16px;
 }
-.server-details-page .server-tabs {
+.server-tabs {
   margin-bottom: 16px;
 }
-.server-details-page .command-input-card .command-textarea {
+.command-input {
   margin-top: 8px;
 }
-.server-details-page .command-input-card .command-actions {
-  margin-top: 8px;
-  display: flex;
-  gap: 8px;
-}
-.server-details-page .command-input-card .command-actions .upload-button {
+.command-upload-btn {
   margin-left: 8px;
 }
-.server-details-page .command-input-card .command-result {
-  margin-top: 8px;
-}
-.map-management .current-map {
-  margin-bottom: 8px;
-}
-.map-management .map-form {
-  margin-top: 8px;
-}
-.map-management .map-form .map-input {
-  width: 200px;
-}
-.player-management .player-actions {
-  margin-bottom: 16px;
-}
-.player-management .message-section {
-  margin-top: 16px;
-}
-.custom-command .command-input {
-  margin-bottom: 8px;
-}
-.custom-command .execute-button {
-  margin-top: 8px;
-  margin-bottom: 8px;
-}
-.custom-command .command-output {
+.command-result {
   margin-top: 8px;
 }
 .form-item-inline {

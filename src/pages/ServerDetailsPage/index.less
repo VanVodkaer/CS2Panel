@@ -63,6 +63,141 @@
   .message-section {
     margin-top: 16px;
   }
+
+  // 快速操作区域样式
+  .quick-actions {
+    .ant-card-body {
+      padding: 16px;
+    }
+
+    .action-row {
+      margin-bottom: 12px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    .action-label {
+      font-weight: 500;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .message-input-group {
+      .ant-input {
+        border-radius: 6px 0 0 6px;
+      }
+
+      .ant-btn {
+        border-radius: 0 6px 6px 0;
+      }
+    }
+  }
+
+  // 玩家列表样式
+  .player-list {
+    .ant-table-thead > tr > th {
+      background-color: #fafafa;
+      font-weight: 600;
+    }
+
+    .ant-table-tbody > tr:hover > td {
+      background-color: #f5f5f5;
+    }
+
+    .player-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bot-tag {
+      font-size: 12px;
+    }
+
+    .player-actions {
+      .ant-btn {
+        margin-right: 4px;
+
+        &:last-child {
+          margin-right: 0;
+        }
+      }
+    }
+
+    .status-tag {
+      text-transform: capitalize;
+    }
+  }
+
+  // 模态框样式
+  .ban-modal,
+  .team-modal {
+    .ant-form-item-label > label {
+      font-weight: 500;
+    }
+
+    .ant-form-item-explain {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .form-actions {
+      margin-top: 16px;
+      text-align: right;
+    }
+  }
+
+  // 统计信息样式
+  .player-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+
+    .stat-item {
+      text-align: center;
+
+      .stat-number {
+        font-size: 24px;
+        font-weight: bold;
+        color: #1890ff;
+        display: block;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+      }
+    }
+  }
+
+  // 响应式设计
+  @media (max-width: 768px) {
+    .quick-actions {
+      .ant-col {
+        margin-bottom: 16px;
+      }
+    }
+
+    .player-list {
+      .ant-table {
+        font-size: 12px;
+      }
+
+      .player-actions {
+        .ant-btn {
+          padding: 4px 8px;
+          font-size: 12px;
+        }
+      }
+    }
+  }
 }
 
 // 自定义命令组件
@@ -87,5 +222,75 @@
 
   .ant-form-item {
     margin-right: 16px;
+  }
+}
+
+// 危险操作按钮样式
+.danger-action {
+  .ant-btn-dangerous {
+    border-color: #ff4d4f;
+
+    &:hover {
+      background-color: #ff4d4f;
+      border-color: #ff4d4f;
+      color: white;
+    }
+  }
+}
+
+// 成功状态样式
+.success-tag {
+  background-color: #f6ffed;
+  border-color: #b7eb8f;
+  color: #52c41a;
+}
+
+// 警告状态样式
+.warning-tag {
+  background-color: #fffbe6;
+  border-color: #ffe58f;
+  color: #faad14;
+}
+
+// 加载状态样式
+.loading-overlay {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    z-index: 1;
+  }
+}
+
+// 操作按钮组样式
+.action-button-group {
+  .ant-btn {
+    margin-right: 8px;
+
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+
+  .ant-btn-sm {
+    padding: 4px 12px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+
+// 紧凑表格样式
+.compact-table {
+  .ant-table-small {
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td {
+      padding: 8px;
+    }
   }
 }

@@ -25,7 +25,7 @@ function ServerTabs({ name, status, fetchStatus, withLoading, execCommand }) {
     {
       key: "players",
       label: "玩家管理",
-      children: <PlayerManagement execCommand={execCommand} fetchStatus={fetchStatus} />,
+      children: <PlayerManagement execCommand={execCommand} fetchStatus={fetchStatus} name={name} status={status} />,
     },
     {
       key: "custom",

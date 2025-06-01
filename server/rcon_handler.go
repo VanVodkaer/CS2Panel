@@ -484,6 +484,32 @@ func rconGameConfigAutoTeamBalanceHandler(c *gin.Context) {
 	})
 }
 
+// rconGameConfigAutoKickHandler 设置自动踢出空闲玩家
+func rconGameConfigAutoKickHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type RconGameConfigAutoKickRequest struct {
+		Name  string `json:"name" binding:"required"`
+		Value string `json:"value"`
+	}
+
+	var req RconGameConfigAutoKickRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleErrorResponse(c, "无效的请求参数", err)
+		return
+	}
+	response, err := ExecRconCommand(FullName(req.Name), "mp_autokick "+req.Value)
+	if err != nil {
+		handleErrorResponse(c, "执行命令失败", err)
+		return
+	} else {
+		util.Info("执行命令成功 命令: mp_autokick " + req.Value + " 响应: " + response)
+	}
+	c.JSON(200, gin.H{
+		"message":  "执行命令成功",
+		"response": response,
+	})
+}
+
 // rconGameConfigLimitTeamsHandler 设置两个队伍之间允许存在的玩家差异数量的最大值，0为无限制
 func rconGameConfigLimitTeamsHandler(c *gin.Context) {
 	// 定义请求参数结构体
@@ -581,6 +607,30 @@ func rconMapChangeHandler(c *gin.Context) {
 	} else {
 		util.Info("执行命令成功 命令: map " + req.Map + " 响应: " + response)
 	}
+	c.JSON(200, gin.H{
+		"message":  "执行命令成功",
+		"response": response,
+	})
+}
+
+// rconGameUserKickHandler 踢出玩家
+func rconGameUserKickHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type RconGameUserKickRequest struct {
+		Name string `form:"name" binding:"required"`
+		User string `form:"user" binding:"required"` // 玩家名称或ID
+	}
+	var req RconGameUserKickRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		handleErrorResponse(c, "无效的请求参数", err)
+		return
+	}
+	response, err := ExecRconCommand(FullName(req.Name), "kick \""+req.User+"\"")
+	if err != nil {
+		handleErrorResponse(c, "执行命令失败", err)
+		return
+	}
+	util.Info("执行命令成功 命令: kick \"" + req.User + "\" 响应: " + response)
 	c.JSON(200, gin.H{
 		"message":  "执行命令成功",
 		"response": response,

@@ -75,9 +75,15 @@ func ServerSetRouter(router *gin.Engine) {
 					configGroup.POST("/startmoney", rconGameConfigStartMoneyHandler)
 					configGroup.POST("/maxmoney", rconGameConfigMaxMoneyHandler)
 					configGroup.POST("/autoteambalance", rconGameConfigAutoTeamBalanceHandler)
+					configGroup.POST("/autokick", rconGameConfigAutoKickHandler)
 					configGroup.POST("/limitteams", rconGameConfigLimitTeamsHandler)
 					configGroup.POST("/c4timer", rconGameConfigC4TimerHandler)
 				}
+				userGroup := gameGroup.Group("/user")
+				{
+					userGroup.GET("/kick", rconGameUserKickHandler)
+				}
+
 			}
 			mapGroup := rconGroup.Group("/map")
 			{

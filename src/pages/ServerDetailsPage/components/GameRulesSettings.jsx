@@ -44,6 +44,7 @@ function GameRulesSettings({ name, withLoading }) {
   const [autoTeamBalance, setAutoTeamBalance] = useState(false);
   const [limitTeams, setLimitTeams] = useState(0);
   const [c4Timer, setC4Timer] = useState(0);
+  const [autokick, setAutokick] = useState(false);
 
   useEffect(() => {
     fetchAllConfigs();
@@ -94,6 +95,7 @@ function GameRulesSettings({ name, withLoading }) {
         api.post("/rcon/game/config/autoteambalance", { name }, { timeout: 60000 }),
         api.post("/rcon/game/config/limitteams", { name }, { timeout: 60000 }),
         api.post("/rcon/game/config/c4timer", { name }, { timeout: 60000 }),
+        api.post("/rcon/game/config/autokick", { name }, { timeout: 60000 }),
       ]);
 
       if (configs[0].status === "fulfilled")
@@ -118,6 +120,8 @@ function GameRulesSettings({ name, withLoading }) {
         setLimitTeams(parseConfigValue(configs[9].value.data.response, "mp_limitteams", "int"));
       if (configs[10].status === "fulfilled")
         setC4Timer(parseConfigValue(configs[10].value.data.response, "mp_c4timer", "int"));
+      if (configs[11].status === "fulfilled")
+        setAutokick(parseConfigValue(configs[11].value.data.response, "mp_autokick", "boolean"));
     } catch (error) {
       console.error("获取配置失败:", error);
     }
@@ -170,7 +174,7 @@ function GameRulesSettings({ name, withLoading }) {
             response = await api.post("/rcon/game/config/buytime", { name, value: value.toString() });
             break;
           case "buyanywhere":
-            response = await api.post("/rcon/game/config/buyanywhere", { name, buy_anywhere: value ? "1" : "0" });
+            response = await api.post("/rcon/game/config/buyanywhere", { name, value: value ? "1" : "0" });
             break;
           case "startmoney":
             response = await api.post("/rcon/game/config/startmoney", { name, value: value.toString() });
@@ -186,6 +190,9 @@ function GameRulesSettings({ name, withLoading }) {
             break;
           case "c4timer":
             response = await api.post("/rcon/game/config/c4timer", { name, value: value.toString() });
+            break;
+          case "autokick":
+            response = await api.post("/rcon/game/config/autokick", { name, value: value ? "1" : "0" });
             break;
           case "gamemode":
             response = await api.post("/rcon/game/mode", {
@@ -457,6 +464,21 @@ function GameRulesSettings({ name, withLoading }) {
               <Button type="primary" size="small" onClick={() => updateGameConfig("limitteams", limitTeams)} block>
                 设置队伍限制
               </Button>
+            </Col>
+          </Row>
+          <Row gutter={16} style={{ marginTop: 12 }}>
+            <Col span={12}>
+              <span style={{ fontSize: "12px", color: "#666" }}>自动踢出挂机/友军伤害玩家</span>
+              <Switch
+                checked={autokick}
+                onChange={(val) => {
+                  setAutokick(val);
+                  updateGameConfig("autokick", val);
+                }}
+                checkedChildren="开启"
+                unCheckedChildren="关闭"
+                style={{ width: "100%", marginTop: 8 }}
+              />
             </Col>
           </Row>
         </Form.Item>

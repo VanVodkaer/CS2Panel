@@ -4,17 +4,31 @@ go 1.23.4
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.3
+	github.com/chzyer/readline v1.5.1
 	github.com/forewing/csgo-rcon v1.3.0
+	github.com/forewing/gobuild v1.1.2
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.0
 )
 
 require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
+	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/containerd/log v0.1.0 // indirect
+	github.com/dsnet/compress v0.0.1 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
+	github.com/jackmordaunt/icns/v2 v2.1.3 // indirect
+	github.com/klauspost/compress v1.17.2 // indirect
+	github.com/klauspost/pgzip v1.2.5 // indirect
+	github.com/mholt/archiver/v4 v4.0.0-alpha.5 // indirect
 	github.com/moby/term v0.5.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
+	github.com/nwaples/rardecode/v2 v2.0.0-beta.2 // indirect
+	github.com/pierrec/lz4/v4 v4.1.12 // indirect
+	github.com/therootcompany/xz v1.0.1 // indirect
+	github.com/ulikunitz/xz v0.5.10 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
