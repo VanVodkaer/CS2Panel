@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 
+	"github.com/VanVodkaer/CS2Panel/config"
 	"github.com/VanVodkaer/CS2Panel/util"
 	"github.com/gin-gonic/gin"
 )
@@ -62,12 +63,48 @@ func rconGameStatusHandler(c *gin.Context) {
 		if err != nil {
 			util.Error("json.Marshal error: ", err)
 		} else {
-			util.Info("获取游戏状态成功" + " 响应: " + string(data))
+			if config.GlobalConfig.Env.Mode == "debug" {
+				util.Debug("获取游戏状态status成功" + " 响应: " + string(data))
+			} else {
+				util.Info("获取游戏状态status成功")
+			}
 		}
 	}
 	c.JSON(200, gin.H{
 		"message": "获取游戏状态成功",
 		"status":  response,
+	})
+}
+
+// rconGameStatusJSONHandler 获取游戏状态 status_json
+func rconGameStatusJSONHandler(c *gin.Context) {
+	type RconGameStatusJSONRequest struct {
+		Name string `form:"name" binding:"required"`
+	}
+	var req RconGameStatusJSONRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		handleErrorResponse(c, "无效的请求参数", err)
+		return
+	}
+
+	status, err := GetServerStatusJSON(FullName(req.Name))
+	if err != nil {
+		handleErrorResponse(c, "获取服务器状态失败", err)
+		return
+	}
+
+	// 记录日志
+	if data, err := json.Marshal(status); err == nil {
+		if config.GlobalConfig.Env.Mode == "debug" {
+			util.Debug("获取游戏状态status_json成功" + " 响应: " + string(data))
+		} else {
+			util.Info("获取游戏状态status_json成功")
+		}
+	}
+
+	c.JSON(200, gin.H{
+		"message": "获取游戏状态成功",
+		"status":  status, // 返回解析后的结构体对象
 	})
 }
 
@@ -613,24 +650,53 @@ func rconMapChangeHandler(c *gin.Context) {
 	})
 }
 
-// rconGameUserKickHandler 踢出玩家
 func rconGameUserKickHandler(c *gin.Context) {
-	// 定义请求参数结构体
 	type RconGameUserKickRequest struct {
-		Name string `form:"name" binding:"required"`
-		User string `form:"user" binding:"required"` // 玩家名称或ID
+		Name string `json:"name" binding:"required"`
+		User string `json:"user" binding:"required"`
 	}
 	var req RconGameUserKickRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		handleErrorResponse(c, "无效的请求参数", err)
 		return
 	}
+
+	util.Debug("rconGameUserKickHandler 请求参数: " + "Name: " + req.Name + ", User: " + req.User)
+
 	response, err := ExecRconCommand(FullName(req.Name), "kick \""+req.User+"\"")
 	if err != nil {
 		handleErrorResponse(c, "执行命令失败", err)
 		return
 	}
 	util.Info("执行命令成功 命令: kick \"" + req.User + "\" 响应: " + response)
+
+	c.JSON(200, gin.H{
+		"message":  "执行命令成功",
+		"response": response,
+	})
+}
+
+// rconGameUserBanIDHandler 禁止玩家ID
+func rconGameUserBanIDHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type RconGameUserBanIDRequest struct {
+		Name string `json:"name" binding:"required"`
+		Time string `json:"time" binding:"required"`
+		ID   string `json:"id" binding:"required"` // steamID64
+	}
+
+	var req RconGameUserBanIDRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleErrorResponse(c, "无效的请求参数", err)
+		return
+	}
+	response, err := ExecRconCommand(FullName(req.Name), "banid "+req.Time+" \""+req.ID+"\"")
+	if err != nil {
+		handleErrorResponse(c, "执行命令失败", err)
+		return
+	} else {
+		util.Info("执行命令成功 命令: banid 0 \"" + req.ID + "\" 响应: " + response)
+	}
 	c.JSON(200, gin.H{
 		"message":  "执行命令成功",
 		"response": response,

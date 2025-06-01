@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -270,6 +271,68 @@ func GetServerStatus(name string) (ServerStatus, error) {
 		return ServerStatus{}, fmt.Errorf("获取服务器状态失败: %v", err)
 	}
 	return ParseCS2Status(statusOutput)
+}
+
+// 在适当的位置添加这些结构体定义
+type ServerStatusJSON struct {
+	FrametimeMs         float64    `json:"frametime_ms"`
+	FramecomputetimeMs  float64    `json:"framecomputetime_ms"`
+	ProcessUptime       int        `json:"process_uptime"`
+	BuildVersion        int        `json:"build_version"`
+	BuildSourceRevision string     `json:"build_source_revision"`
+	MemPhysTotalGb      float64    `json:"mem_phys_total_gb"`
+	MemPhysAvailGb      float64    `json:"mem_phys_avail_gb"`
+	MemVirtTotalGb      float64    `json:"mem_virt_total_gb"`
+	MemVirtAvailGb      float64    `json:"mem_virt_avail_gb"`
+	Server              ServerInfo `json:"server"`
+}
+
+type ServerInfo struct {
+	Hibernating               bool         `json:"hibernating"`
+	CPUUsage                  float64      `json:"cpu_usage"`
+	ClientsBot                int          `json:"clients_bot"`
+	ClientsHuman              int          `json:"clients_human"`
+	ClientsProxies            int          `json:"clients_proxies"`
+	Map                       string       `json:"map"`
+	Addon                     string       `json:"addon"`
+	UDPPort                   int          `json:"udp_port"`
+	Clients                   []ClientInfo `json:"clients"`
+	AsyncNetworkingWaitMs     float64      `json:"async_networking_wait_ms"`
+	StartupServerModuleInit   int          `json:"startup_ServerModuleInit"`
+	StartupGameRulesCreated   int          `json:"startup_GameRulesCreated"`
+	StartupSteamLoggedOn      int          `json:"startup_SteamLoggedOn"`
+	StartupRequestedGcSession int          `json:"startup_RequestedGcSession"`
+	GameVars                  int          `json:"game_vars"`
+	GCStatus                  string       `json:"gc_status"`
+	SVShutdownRequested       bool         `json:"sv_shutdown_requested"`
+	SteamLoggedOn             bool         `json:"steam_loggedon"`
+	SteamID64                 string       `json:"steamid64"`
+	SteamID                   string       `json:"steamid"`
+	// 帧时间相关字段可以根据需要添加
+}
+
+type ClientInfo struct {
+	SteamID64 string `json:"steamid64"`
+	SteamID   string `json:"steamid"`
+	Bot       bool   `json:"bot"`
+	Name      string `json:"name"`
+}
+
+// 修改 GetServerStatusJSON 函数
+func GetServerStatusJSON(name string) (*ServerStatusJSON, error) {
+	statusOutput, err := ExecRconCommand(name, "status_json")
+	if err != nil {
+		return nil, fmt.Errorf("获取服务器状态JSON失败: %v", err)
+	}
+
+	// 解析JSON字符串为结构体
+	var status ServerStatusJSON
+	err = json.Unmarshal([]byte(statusOutput), &status)
+	if err != nil {
+		return nil, fmt.Errorf("解析状态JSON失败: %v", err)
+	}
+
+	return &status, nil
 }
 
 // ====================== 工具函数 ======================

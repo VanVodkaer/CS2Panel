@@ -10,11 +10,13 @@ import CommandInput from "./components/CommandInput";
 function ServerDetailsPage() {
   const { name } = useParams();
   const [status, setStatus] = useState({});
+  const [statusjson, setStatusJson] = useState({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchStatus();
-    const timer = setInterval(fetchStatus, 30000);
+    fetchStatusJson();
+    const timer = setInterval(fetchStatus, 10000);
     return () => clearInterval(timer);
   }, [name]);
 
@@ -23,8 +25,16 @@ function ServerDetailsPage() {
       const res = await api.get("/rcon/game/status", { params: { name } });
       setStatus(res.data.status || {});
     } catch (error) {
-      message.error("获取服务器状态失败: " + error);
-      message.warning("服务器可能正在启动中/未启动，请检查并稍后再试");
+      message.error("获取服务器status失败,服务器可能正在启动中/未启动，请检查并稍后再试: " + error);
+    }
+  };
+
+  const fetchStatusJson = async () => {
+    try {
+      const res = await api.get("/rcon/game/statusjson", { params: { name } });
+      setStatusJson(res.data.status || {});
+    } catch (error) {
+      message.error("获取服务器status_json失败,服务器可能正在启动中/未启动，请检查并稍后再试: " + error);
     }
   };
 
@@ -65,7 +75,9 @@ function ServerDetailsPage() {
         <ServerTabs
           name={name}
           status={status}
+          statusjson={statusjson}
           fetchStatus={fetchStatus}
+          fetchStatusJson={fetchStatusJson}
           withLoading={withLoading}
           execCommand={execCommand}
         />

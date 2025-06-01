@@ -54,6 +54,7 @@ func ServerSetRouter(router *gin.Engine) {
 			gameGroup := rconGroup.Group("/game")
 			{
 				gameGroup.GET("/status", rconGameStatusHandler)
+				gameGroup.GET("/statusjson", rconGameStatusJSONHandler)
 				gameGroup.POST("/restart", rconGameRestartHandler)
 				gameGroup.POST("/mode", rconGameConfigModeHandler)
 
@@ -81,7 +82,8 @@ func ServerSetRouter(router *gin.Engine) {
 				}
 				userGroup := gameGroup.Group("/user")
 				{
-					userGroup.GET("/kick", rconGameUserKickHandler)
+					userGroup.POST("/kick", rconGameUserKickHandler)
+					userGroup.POST("/banid", rconGameUserBanIDHandler)
 				}
 
 			}

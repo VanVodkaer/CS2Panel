@@ -5,7 +5,7 @@ import GameRulesSettings from "./GameRulesSettings";
 import PlayerManagement from "./PlayerManagement";
 import CustomCommand from "./CustomCommand";
 
-function ServerTabs({ name, status, fetchStatus, withLoading, execCommand }) {
+function ServerTabs({ name, status, statusjson, fetchStatus, withLoading, execCommand, fetchStatusJson }) {
   const tabItems = [
     {
       key: "map",
@@ -25,12 +25,15 @@ function ServerTabs({ name, status, fetchStatus, withLoading, execCommand }) {
     {
       key: "players",
       label: "玩家管理",
-      children: <PlayerManagement execCommand={execCommand} fetchStatus={fetchStatus} name={name} status={status} />,
-    },
-    {
-      key: "custom",
-      label: "自定义命令",
-      children: <CustomCommand execCommand={execCommand} />,
+      children: (
+        <PlayerManagement
+          execCommand={execCommand}
+          fetchStatus={fetchStatus}
+          fetchStatusJson={fetchStatusJson}
+          name={name}
+          statusjson={statusjson}
+        />
+      ),
     },
   ];
 
