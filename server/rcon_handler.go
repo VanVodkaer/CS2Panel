@@ -675,30 +675,3 @@ func rconGameUserKickHandler(c *gin.Context) {
 		"response": response,
 	})
 }
-
-// rconGameUserBanIDHandler 禁止玩家ID
-func rconGameUserBanIDHandler(c *gin.Context) {
-	// 定义请求参数结构体
-	type RconGameUserBanIDRequest struct {
-		Name string `json:"name" binding:"required"`
-		Time string `json:"time" binding:"required"`
-		ID   string `json:"id" binding:"required"` // steamID64
-	}
-
-	var req RconGameUserBanIDRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		handleErrorResponse(c, "无效的请求参数", err)
-		return
-	}
-	response, err := ExecRconCommand(FullName(req.Name), "banid "+req.Time+" \""+req.ID+"\"")
-	if err != nil {
-		handleErrorResponse(c, "执行命令失败", err)
-		return
-	} else {
-		util.Info("执行命令成功 命令: banid 0 \"" + req.ID + "\" 响应: " + response)
-	}
-	c.JSON(200, gin.H{
-		"message":  "执行命令成功",
-		"response": response,
-	})
-}

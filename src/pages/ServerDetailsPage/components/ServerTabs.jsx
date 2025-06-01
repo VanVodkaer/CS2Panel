@@ -3,7 +3,6 @@ import MapManagement from "./MapManagement";
 import GameControl from "./GameControl";
 import GameRulesSettings from "./GameRulesSettings";
 import PlayerManagement from "./PlayerManagement";
-import CustomCommand from "./CustomCommand";
 
 function ServerTabs({ name, status, statusjson, fetchStatus, withLoading, execCommand, fetchStatusJson }) {
   const tabItems = [

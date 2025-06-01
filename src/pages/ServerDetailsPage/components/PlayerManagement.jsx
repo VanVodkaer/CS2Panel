@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Card, Table, Button, Space, InputNumber, message, Tag, Modal, Typography } from "antd";
+import { Card, Table, Button, Space, message, Tag, Modal, Typography } from "antd";
 import { UserOutlined, RobotOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import api from "../../../config/axiosConfig";
 
@@ -9,7 +9,6 @@ const { confirm } = Modal;
 function PlayerManagement({ fetchStatusJson, name, statusjson }) {
   const [players, setPlayers] = useState([]);
   const [loading] = useState(false);
-  const [banTime, setBanTime] = useState(30); // 默认封禁30分钟
 
   useEffect(() => {
     // 从 statusjson.server.clients 获取玩家信息
@@ -55,47 +54,6 @@ function PlayerManagement({ fetchStatusJson, name, statusjson }) {
           })
           .catch((error) => {
             message.error("踢出玩家失败: " + (error.response?.data?.message || error.message));
-          });
-      },
-    });
-  };
-
-  const banPlayer = (playerName, steamid64) => {
-    confirm({
-      title: "确认封禁玩家",
-      icon: <ExclamationCircleOutlined />,
-      content: (
-        <div>
-          <p>确定要封禁玩家 "{playerName}" 吗？</p>
-          <p>
-            <Text type="secondary">SteamID: {steamid64}</Text>
-          </p>
-          <p>
-            封禁时长：
-            <InputNumber
-              min={1}
-              max={43200} // 最大30天
-              value={banTime}
-              onChange={setBanTime}
-              style={{ margin: "0 8px" }}
-              addonAfter="分钟"
-            />
-          </p>
-        </div>
-      ),
-      onOk() {
-        return api
-          .post("/rcon/game/user/banid", {
-            name,
-            time: banTime.toString(),
-            id: steamid64,
-          })
-          .then(() => {
-            message.success(`玩家 ${playerName} 已被封禁 ${banTime} 分钟`);
-            fetchStatusJson();
-          })
-          .catch((error) => {
-            message.error("封禁玩家失败: " + (error.response?.data?.message || error.message));
           });
       },
     });
@@ -156,7 +114,7 @@ function PlayerManagement({ fetchStatusJson, name, statusjson }) {
     {
       title: "操作",
       key: "actions",
-      width: 160,
+      width: 100,
       render: (_, record) => {
         // 不对机器人显示操作按钮
         if (record.bot) {
@@ -164,19 +122,9 @@ function PlayerManagement({ fetchStatusJson, name, statusjson }) {
         }
 
         return (
-          <Space size="small">
-            <Button type="primary" size="small" danger onClick={() => kickPlayer(record.name)}>
-              踢出
-            </Button>
-            <Button
-              type="default"
-              size="small"
-              danger
-              disabled={!record.steamid64} // 如果没有steamid64则禁用封禁按钮
-              onClick={() => banPlayer(record.name, record.steamid64)}>
-              封禁
-            </Button>
-          </Space>
+          <Button type="primary" size="small" danger onClick={() => kickPlayer(record.name)}>
+            踢出
+          </Button>
         );
       },
     },
@@ -200,22 +148,6 @@ function PlayerManagement({ fetchStatusJson, name, statusjson }) {
             <Button type="primary" onClick={fetchStatusJson} loading={loading}>
               刷新玩家列表
             </Button>
-          </Space>
-        </Card>
-
-        {/* 封禁时长设置 */}
-        <Card title="封禁设置" size="small">
-          <Space align="center">
-            <Text>默认封禁时长：</Text>
-            <InputNumber
-              min={1}
-              max={43200}
-              value={banTime}
-              onChange={setBanTime}
-              addonAfter="分钟"
-              style={{ width: 120 }}
-            />
-            <Text type="secondary">（1分钟 - 30天）</Text>
           </Space>
         </Card>
 
@@ -247,10 +179,7 @@ function PlayerManagement({ fetchStatusJson, name, statusjson }) {
               <Text strong>踢出</Text>：立即将玩家从服务器移除，玩家可以重新加入
             </li>
             <li>
-              <Text strong>封禁</Text>：根据SteamID64封禁玩家指定时长，期间无法加入服务器
-            </li>
-            <li>
-              <Text type="secondary">注意：机器人无法进行踢出和封禁操作</Text>
+              <Text type="secondary">注意：机器人无法进行踢出操作</Text>
             </li>
           </ul>
         </Card>

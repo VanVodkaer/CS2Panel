@@ -83,7 +83,6 @@ func ServerSetRouter(router *gin.Engine) {
 				userGroup := gameGroup.Group("/user")
 				{
 					userGroup.POST("/kick", rconGameUserKickHandler)
-					userGroup.POST("/banid", rconGameUserBanIDHandler)
 				}
 
 			}
