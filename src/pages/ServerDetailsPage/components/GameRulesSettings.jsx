@@ -84,6 +84,8 @@ function GameRulesSettings({ name, withLoading }) {
   const fetchAllConfigs = async () => {
     try {
       const configs = await Promise.allSettled([
+        api.post("/rcon/game/config/gamemode", { name }, { timeout: 60000 }),
+        api.post("/rcon/game/config/gametype", { name }, { timeout: 60000 }),
         api.post("/rcon/game/config/maxrounds", { name }, { timeout: 60000 }),
         api.post("/rcon/game/config/timelimit", { name }, { timeout: 60000 }),
         api.post("/rcon/game/config/roundtime", { name }, { timeout: 60000 }),
@@ -99,29 +101,33 @@ function GameRulesSettings({ name, withLoading }) {
       ]);
 
       if (configs[0].status === "fulfilled")
-        setMaxRounds(parseConfigValue(configs[0].value.data.response, "mp_maxrounds", "int"));
+        setGameMode(parseConfigValue(configs[0].value.data.response, "game_mode", "int"));
       if (configs[1].status === "fulfilled")
-        setMatchTime(parseConfigValue(configs[1].value.data.response, "mp_timelimit", "float"));
+        setGameType(parseConfigValue(configs[1].value.data.response, "game_type", "int"));
       if (configs[2].status === "fulfilled")
-        setRoundTime(parseConfigValue(configs[2].value.data.response, "mp_roundtime", "float"));
+        setMaxRounds(parseConfigValue(configs[2].value.data.response, "mp_maxrounds", "int"));
       if (configs[3].status === "fulfilled")
-        setFreezeTime(parseConfigValue(configs[3].value.data.response, "mp_freezetime", "int"));
+        setMatchTime(parseConfigValue(configs[3].value.data.response, "mp_timelimit", "float"));
       if (configs[4].status === "fulfilled")
-        setBuyTime(parseConfigValue(configs[4].value.data.response, "mp_buytime", "float"));
+        setRoundTime(parseConfigValue(configs[4].value.data.response, "mp_roundtime", "float"));
       if (configs[5].status === "fulfilled")
-        setBuyAnywhere(parseConfigValue(configs[5].value.data.response, "mp_buy_anywhere", "boolean"));
+        setFreezeTime(parseConfigValue(configs[5].value.data.response, "mp_freezetime", "int"));
       if (configs[6].status === "fulfilled")
-        setStartMoney(parseConfigValue(configs[6].value.data.response, "mp_startmoney", "int"));
+        setBuyTime(parseConfigValue(configs[6].value.data.response, "mp_buytime", "float"));
       if (configs[7].status === "fulfilled")
-        setMaxMoney(parseConfigValue(configs[7].value.data.response, "mp_maxmoney", "int"));
+        setBuyAnywhere(parseConfigValue(configs[7].value.data.response, "mp_buy_anywhere", "boolean"));
       if (configs[8].status === "fulfilled")
-        setAutoTeamBalance(parseConfigValue(configs[8].value.data.response, "mp_autoteambalance", "boolean"));
+        setStartMoney(parseConfigValue(configs[8].value.data.response, "mp_startmoney", "int"));
       if (configs[9].status === "fulfilled")
-        setLimitTeams(parseConfigValue(configs[9].value.data.response, "mp_limitteams", "int"));
+        setMaxMoney(parseConfigValue(configs[9].value.data.response, "mp_maxmoney", "int"));
       if (configs[10].status === "fulfilled")
-        setC4Timer(parseConfigValue(configs[10].value.data.response, "mp_c4timer", "int"));
+        setAutoTeamBalance(parseConfigValue(configs[10].value.data.response, "mp_autoteambalance", "boolean"));
       if (configs[11].status === "fulfilled")
-        setAutokick(parseConfigValue(configs[11].value.data.response, "mp_autokick", "boolean"));
+        setLimitTeams(parseConfigValue(configs[11].value.data.response, "mp_limitteams", "int"));
+      if (configs[12].status === "fulfilled")
+        setC4Timer(parseConfigValue(configs[12].value.data.response, "mp_c4timer", "int"));
+      if (configs[13].status === "fulfilled")
+        setAutokick(parseConfigValue(configs[13].value.data.response, "mp_autokick", "boolean"));
     } catch (error) {
       console.error("获取配置失败:", error);
     }

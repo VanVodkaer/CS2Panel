@@ -67,6 +67,8 @@ func ServerSetRouter(router *gin.Engine) {
 				}
 				configGroup := gameGroup.Group("/config")
 				{
+					configGroup.POST("/gamemode", rconGameConfigGameModeHandler)
+					configGroup.POST("/gametype", rconGameConfigGameTypeHandler)
 					configGroup.POST("/maxrounds", rconGameConfigMaxRoundsHandler)
 					configGroup.POST("/timelimit", rconGameConfigTimeLimitHandler)
 					configGroup.POST("/roundtime", rconGameConfigRoundTimeHandler)

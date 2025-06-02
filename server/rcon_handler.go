@@ -276,6 +276,58 @@ func rconGameWarmPauseHandler(c *gin.Context) {
 	})
 }
 
+// rconGameConfigGameModeHandler 设置游戏模式
+func rconGameConfigGameModeHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type RconGameConfigGameModeRequest struct {
+		Name  string `json:"name" binding:"required"`
+		Value string `json:"value"` // 游戏模式 无参数返回当前游戏模式
+	}
+
+	var req RconGameConfigGameModeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleErrorResponse(c, "无效的请求参数", err)
+		return
+	}
+	response, err := ExecRconCommand(FullName(req.Name), "game_mode "+req.Value)
+	if err != nil {
+		handleErrorResponse(c, "执行命令失败", err)
+		return
+	} else {
+		util.Info("执行命令成功 命令: game_mode " + req.Value + " 响应: " + response)
+	}
+	c.JSON(200, gin.H{
+		"message":  "执行命令成功",
+		"response": response,
+	})
+}
+
+// rconGameConfigGameTypeHandler 设置游戏类型
+func rconGameConfigGameTypeHandler(c *gin.Context) {
+	// 定义请求参数结构体
+	type RconGameConfigGameTypeRequest struct {
+		Name  string `json:"name" binding:"required"`
+		Value string `json:"value"` // 游戏类型 无参数返回当前游戏类型
+	}
+
+	var req RconGameConfigGameTypeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleErrorResponse(c, "无效的请求参数", err)
+		return
+
+	}
+	response, err := ExecRconCommand(FullName(req.Name), "game_type "+req.Value)
+	if err != nil {
+		handleErrorResponse(c, "执行RCON命令失败", err)
+		return
+	}
+	util.Info("执行命令成功 命令: game_type " + req.Value + " 响应: " + response)
+	c.JSON(200, gin.H{
+		"message":  "执行命令成功",
+		"response": response,
+	})
+}
+
 // rconGameConfigMaxRoundsHandler 设置最大回合数
 func rconGameConfigMaxRoundsHandler(c *gin.Context) {
 	// 定义请求参数结构体
