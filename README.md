@@ -18,7 +18,7 @@ cd CS2Panel
 ```
 
 2. 重命名config目录下的 `config.yaml.example` 文件 为 `config.yaml` 并编辑
-3. 编辑根目录下的 `.env` 文件
+3. 重命名根目录下的 `.env.example` 文件 为 `.env` 并编辑
 4. 运行 Docker
 5. 安装依赖并编译前端页面
 
@@ -33,7 +33,6 @@ npm run build
 
 6. 运行
 
-
 ```bash
 # 运行
 go run ./cmd
@@ -45,9 +44,7 @@ go run ./cmd
 
 默认配置文件路径：`config/config.yaml` 和 `.env`
 
-
 参考[文档](./docs/config.md)
-
 
 ---
 

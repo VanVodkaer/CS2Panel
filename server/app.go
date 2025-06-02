@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/VanVodkaer/CS2Panel/config"
@@ -58,7 +59,8 @@ func (app *App) ServerStart() {
 		util.Info("API 服务监听地址: " + addr)
 
 		if err := http.ListenAndServe(addr, router); err != nil {
-			util.Error("API 服务启动失败: %v", err)
+			util.Error("API 服务启动失败:", err)
+			os.Exit(1) // 退出程序
 		}
 	}()
 
