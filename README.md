@@ -1,8 +1,12 @@
+🌐 [English](./README.en.md) | [中文](./README.md)
 # CS2Panel
 
 > 轻量级、用户友好的 CS2（Counter-Strike 2）游戏服务器管理工具
 >
-> 本仓库后端部分，使用 **Go (Golang)** 编写
+> 本仓库:
+> 
+> 后端部分，使用 **Go (Golang)** 编写
+> 
 > 前端部分，使用 **React** 编写
 
  喜欢这个项目的话，请给个Star吧⭐
